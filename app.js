@@ -1,15 +1,14 @@
-let products=JSON.parse(localStorage.getItem("nickvintage-products")||"null")||[
-{id:1,name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p1",new:true,status:"available",description:"Nike Tech Tracksuit in Schwarz."},
-{id:2,name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p2",new:true,status:"available",description:"Nike Tech Tracksuit in Grau."},
-{id:3,name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p3",new:true,status:"available",description:"Nike Tech Tracksuit in Navy."},
-{id:4,name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p4",new:true,status:"available",description:"Ralph Lauren Pullover in Navy."},
-{id:5,name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p5",new:true,status:"available",description:"Ralph Lauren Pullover in Beige."},
-{id:6,name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p6",new:true,status:"available",description:"Ralph Lauren Pullover in Grau."},
-{id:7,name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p7",new:true,status:"available",description:"Ralph Lauren Pullover in Schwarz."},
-{id:8,name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p8",new:true,status:"available",description:"Nike Tech Hoodie in Schwarz."},
-{id:9,name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p9",new:true,status:"available",description:"Nike Tech Hoodie in Grau."},
-{id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available",description:"Nike Tech Pants in Schwarz."}
-];
+let products=[
+{id:1,name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p1",new:true,status:"available"},
+{id:2,name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p2",new:true,status:"available"},
+{id:3,name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p3",new:true,status:"available"},
+{id:4,name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p4",new:true,status:"available"},
+{id:5,name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p5",new:true,status:"available"},
+{id:6,name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p6",new:true,status:"available"},
+{id:7,name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p7",new:true,status:"available"},
+{id:8,name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p8",new:true,status:"available"},
+{id:9,name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p9",new:true,status:"available"},
+{id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
 let cart=JSON.parse(localStorage.getItem("nickvintage-cart")||"[]");
 let activeFilter="Alle";
 
