@@ -22,7 +22,11 @@ if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:2,name:"Adidas Trackpants Classic",cat:"Trackpants",size:"M",price:69.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"ADIDAS",image:"",stock:1,new:true}
 ],null,2));
 
-const readProducts=()=>JSON.parse(fs.readFileSync(dbFile,"utf8"));
+const productDefaults={
+  1:{name:"Nike Tech Tracksuit",cat:"Tracksuits",size:"L",price:149.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",new:true},
+  2:{name:"Ralph Lauren Knit Pullover",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"CURATED",code:"RL",image:"https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&fm=jpg&q=88&w=1200",new:true}
+};
+const readProducts=()=>JSON.parse(fs.readFileSync(dbFile,"utf8")).map(p=>({...productDefaults[p.id],...p,image:p.image||productDefaults[p.id]?.image||""}));
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
