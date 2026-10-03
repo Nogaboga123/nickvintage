@@ -38,7 +38,7 @@ function renderProducts(){
  if(sort==="high")list.sort((a,b)=>b.price-a.price);
  if(sort==="new")list.sort((a,b)=>Number(b.new)-Number(a.new));
  const q=(document.getElementById("searchInput").value||"").toLowerCase().trim();
- if(q)list=list.filter(p=>(p.name+" "+p.cat+" "+p.code+" "+p.size).toLowerCase().includes(q));
+ if(q){const aliases={rot:"red",blau:"blue navy",navy:"navy blau",grau:"grey gray",grey:"grey grau",schwarz:"black",black:"black schwarz",beige:"beige",weiß:"white",weiss:"white",grün:"green",gruen:"green",gelb:"yellow"};const terms=q.split(/\s+/).filter(Boolean);list=list.filter(p=>{const raw=[p.name,p.cat,p.code,p.tag,p.size,p.condition,p.color,p.colour,p.description].filter(Boolean).join(" ").toLowerCase();const hay=raw+" "+Object.entries(aliases).filter(([de,en])=>raw.includes(de)||en.split(" ").some(x=>raw.includes(x))).flat().join(" ");return terms.every(t=>hay.includes(t)||(aliases[t]||"").split(" ").some(x=>x&&hay.includes(x)))})}
  document.getElementById("productTotal").textContent=list.length+" Pieces";
  document.getElementById("products").innerHTML=list.map(p=>{
   const id=Number(p.id),fav=favorites.includes(id);
@@ -100,7 +100,7 @@ document.getElementById("products").addEventListener("click",e=>{
 });
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
-document.getElementById("searchInput").oninput=renderProducts;
+document.getElementById("searchInput").oninput=()=>{activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts();};
 const favoritesBtn=document.getElementById("favoritesBtn");
 if(favoritesBtn)favoritesBtn.onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");if(s){s.style.display="block";s.scrollIntoView({behavior:"smooth"})}};
 const closeFavorites=document.getElementById("closeFavorites");
@@ -108,7 +108,7 @@ if(closeFavorites)closeFavorites.onclick=()=>{const s=document.getElementById("f
 document.getElementById("statusForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("statusResult");out.textContent="Wird geprüft…";try{const r=await fetch("/api/order-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:document.getElementById("statusOrder").value,email:document.getElementById("statusEmail").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.innerHTML="<b>"+d.id+"</b> · "+d.status+(d.tracking?" · Tracking: "+d.tracking:"")+"<br>"+d.items.map(x=>x.qty+"× "+x.name+" ("+(x.size||"—")+")").join(", ")}catch(err){out.textContent=err.message}};
 document.getElementById("searchBtn").onclick=()=>{const bar=document.getElementById("searchbar");bar.classList.toggle("open");if(bar.classList.contains("open"))setTimeout(()=>document.getElementById("searchInput").focus(),0)};
 document.getElementById("closeSearch").onclick=()=>{document.getElementById("searchbar").classList.remove("open");document.getElementById("searchInput").value="";activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()};
-document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){document.getElementById("shop").scrollIntoView({behavior:"smooth"});document.getElementById("searchbar").classList.remove("open")}});
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();renderProducts();}});
 
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
 document.getElementById("closeModal").onclick=closeProduct;document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutModal").classList.remove("open");
