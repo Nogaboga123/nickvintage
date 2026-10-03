@@ -42,11 +42,10 @@ function renderProducts(){
  document.getElementById("productTotal").textContent=list.length+" Pieces";
  document.getElementById("products").innerHTML=list.map(p=>{
   const id=Number(p.id),fav=favorites.includes(id);
-  return '<article class="product" data-id="'+id+'" style="position:relative"><button type="button" class="fav" data-fav-id="'+id+'" aria-label="Favorit" aria-pressed="'+fav+'" style="position:absolute;right:12px;top:12px;z-index:5;border:0;background:#fff;width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:21px;color:'+(fav?'#e00000':'#111')+'">'+(fav?'♥':'♡')+'</button><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgFor(p)?'<img loading="lazy" src="'+imgFor(p)+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">'+(p.status==="sold"?'SOLD':(p.new?'NEW':p.tag))+'</span></div><div class="product-info"><h3>'+p.name+'</h3><p>'+p.cat+' · '+p.size+' · '+p.condition+'</p><p class="price">'+euro(p.price)+'</p></div></article>';
+  return '<article class="product" data-id="'+id+'" style="position:relative"><button type="button" class="fav" data-fav-id="'+id+'" aria-label="Favorit" aria-pressed="'+fav+'" style="position:absolute;right:12px;top:12px;z-index:20;border:0;background:#fff;width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:21px;color:'+(fav?'#e00000':'#111')+'">'+(fav?'♥':'♡')+'</button><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgFor(p)?'<img loading="lazy" src="'+imgFor(p)+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">'+(p.status==="sold"?'SOLD':(p.new?'NEW':p.tag))+'</span></div><div class="product-info"><h3>'+p.name+'</h3><p>'+p.cat+' · '+p.size+' · '+p.condition+'</p><p class="price">'+euro(p.price)+'</p></div></article>';
  }).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
- document.querySelectorAll("#products .fav").forEach(btn=>btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();toggleFav(Number(btn.dataset.favId));}));
- document.querySelectorAll("#products .product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))));
 }
+
 function updateFavUI(){
  const n=document.getElementById("favCount");if(n)n.textContent=favorites.length;
  const box=document.getElementById("favoriteProducts");if(!box)return;
@@ -93,6 +92,12 @@ function renderCheckout(){
  document.getElementById("checkoutTotal").textContent=euro(cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0));
 }
 function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");return}renderCheckout();document.getElementById("checkoutModal").classList.add("open");closeCart()}
+document.getElementById("products").addEventListener("click",e=>{
+ const fav=e.target.closest("[data-fav-id]");
+ if(fav){e.preventDefault();e.stopPropagation();toggleFav(Number(fav.dataset.favId));return;}
+ const card=e.target.closest(".product[data-id]");
+ if(card)openProduct(Number(card.dataset.id));
+});
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
 document.getElementById("searchInput").oninput=renderProducts;
