@@ -119,3 +119,9 @@ button,input,select{border-radius:0}
 .advanced-filters button{background:#111;color:#fff;cursor:pointer;letter-spacing:.05em}
 @media(max-width:900px){.advanced-filters{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.advanced-filters{grid-template-columns:1fr 1fr}.advanced-filters button{grid-column:1/-1}}
+
+/* New + recently viewed sections */
+.recommend-section{padding:70px clamp(20px,5vw,80px);border-top:1px solid var(--nv-line);background:#f7f6f2}
+.recommendation-products{grid-template-columns:repeat(4,1fr)}
+.mini-link{font-size:10px;font-weight:900;letter-spacing:.08em;text-decoration:none;color:#111}
+@media(max-width:900px){.recommendation-products{grid-template-columns:repeat(2,1fr)}}
