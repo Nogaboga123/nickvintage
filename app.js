@@ -32,7 +32,7 @@ const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 
 function renderProducts(){
- let list=products.filter(p=>activeFilter==="Alle"||p.cat===activeFilter);
+ let list=products.filter(p=>!p.hidden&&(activeFilter==="Alle"||p.cat===activeFilter));
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
  if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
  if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
