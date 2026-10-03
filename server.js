@@ -187,13 +187,14 @@ app.post("/api/admin/products",auth,(req,res)=>{
  const p=readProducts();
  const body=req.body||{};
  const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
- const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),stock:Math.max(0,Number(body.stock)||0),image:String(body.image||""),new:!!body.new};
+ const image=String(body.image||"");const images=Array.isArray(body.images)?body.images.map(String).filter(Boolean):[];
+ const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
  p.push(item);writeProducts(p);res.status(201).json(item);
 });
 app.put("/api/admin/products/:id",auth,(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const i=p.findIndex(x=>x.id===id);
  if(i<0)return res.status(404).json({error:"Produkt nicht gefunden"});
- p[i]={...p[i],...req.body,id};writeProducts(p);res.json(p[i]);
+ p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);writeProducts(p);res.json(p[i]);
 });
 app.delete("/api/admin/products/:id",auth,(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const item=p.find(x=>x.id===id);
