@@ -11,14 +11,14 @@ let cart=JSON.parse(localStorage.getItem("nickvintage-cart")||"[]");
 let activeFilter="Alle";
 
 const imageMap={
-  1:"https://images.unsplash.com/photo-1643308002103-f5323c0afa01?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  2:"https://images.unsplash.com/photo-1553227138-bff31be43f47?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  3:"https://images.unsplash.com/photo-1768216330811-18537dd9031e?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  4:"https://images.unsplash.com/photo-1582113943690-eb2d7b74cdb5?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  5:"https://images.unsplash.com/photo-1602744079676-0cb9c31644b6?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  6:"https://images.unsplash.com/photo-1684255864552-7d123dcc2850?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  7:"https://images.unsplash.com/photo-1643308002103-f5323c0afa01?auto=format&fit=crop&fm=jpg&q=82&w=1200",
-  8:"https://images.unsplash.com/photo-1553227138-bff31be43f47?auto=format&fit=crop&fm=jpg&q=82&w=1200"
+  1:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  2:"https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  3:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  4:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  5:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  6:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  7:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1200",
+  8:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200"
 };
 const imgFor=p=>p.image||imageMap[p.id]||"";
 
