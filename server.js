@@ -170,7 +170,7 @@ const upload=multer({storage:multer.diskStorage({
 }),limits:{fileSize:8*1024*1024},fileFilter:(_r,f,cb)=>cb(null,/^image\/(jpeg|png|webp|gif)$/.test(f.mimetype))});
 
 
-app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts().filter(p=>!p.hidden&&(!p.publishAt||new Date(p.publishAt).getTime()<=now))});
+app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts().filter(p=>!p.hidden&&(!p.publishAt||new Date(p.publishAt).getTime()<=now)))});
 app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
