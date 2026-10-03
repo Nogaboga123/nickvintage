@@ -11,6 +11,7 @@ let products=[
 {id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
 let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
+let favorites=JSON.parse(localStorage.getItem("nd-vintage-favorites")||"[]");
 
 const imageMap={
 1:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_599,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/22860c98-b8c4-4779-99f0-893399c1dc00/M+NK+TCH+FLC+FZ+WR+HOODIE.png",
@@ -40,12 +41,13 @@ function renderProducts(){
  if(q)list=list.filter(p=>(p.name+" "+p.cat+" "+p.code+" "+p.size).toLowerCase().includes(q));
  document.getElementById("productTotal").textContent=list.length+" Pieces";
  document.getElementById("products").innerHTML=list.map(p=>`
- <article class="product" data-id="${p.id}">
+ <article class="product" data-id="${p.id}" style="position:relative"><button class="fav" onclick="event.stopPropagation();toggleFav(${p.id})" aria-label="Favorit" style="position:absolute;right:12px;top:12px;z-index:3;border:0;background:white;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px">${favorites.includes(p.id)?"♥":"♡"}</button>
   <div class="product-image ${p.cls||"p1"} ${p.status==="sold"?"sold":""}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="${p.name}">`:`<div class="fake-photo">${p.code}</div>`}<span class="badge">${p.status==="sold"?"SOLD":(p.new?"NEW":p.tag)}</span></div>
   <div class="product-info"><h3>${p.name}</h3><p>${p.cat} · ${p.size} · ${p.condition}</p><p class="price">${euro(p.price)}</p></div>
  </article>`).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
  document.querySelectorAll(".product").forEach(x=>x.onclick=()=>openProduct(+x.dataset.id));
 }
+window.toggleFav=id=>{favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));renderProducts();};
 function updateCart(){
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
