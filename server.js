@@ -142,15 +142,17 @@ app.post("/api/order-status",(req,res)=>{
  if(!order||!email)return res.status(400).json({error:"Bestellnummer und E-Mail eingeben."});
  const found=readOrders().find(x=>String(x.id).toLowerCase()===order&&String(x.email).toLowerCase()===email);
  if(!found)return res.status(404).json({error:"Keine passende Bestellung gefunden."});
- res.json({id:found.id,status:found.status,tracking:found.tracking||"",createdAt:found.createdAt,items:found.items.map(x=>({name:x.name,size:x.size,qty:x.qty}))});
+ res.json({id:found.id,status:found.status,tracking:found.tracking||"",carrier:found.carrier||"",createdAt:found.createdAt,items:(found.items||[]).map(x=>({name:x.name,size:x.size,qty:x.qty}))});
 });
 app.get("/api/admin/orders",auth,(_req,res)=>res.json(readOrders()));
+app.get("/api/admin/stats",auth,(_req,res)=>{const orders=readOrders().filter(x=>x.status!=="Storniert"),products=readProducts(),revenue=orders.reduce((n,x)=>n+Number(x.total||0),0);let cost=0;for(const o of orders)for(const item of (o.items||[])){const p=products.find(x=>Number(x.id)===Number(item.id));cost+=Number(p?.purchasePrice||0)*Number(item.qty||1)}res.json({revenue,orders:orders.length,average:orders.length?revenue/orders.length:0,estimatedProfit:revenue-cost})});
 app.put("/api/admin/orders/:id",auth,(req,res)=>{
  const list=readOrders(),i=list.findIndex(x=>x.id===req.params.id);
  if(i<0)return res.status(404).json({error:"Bestellung nicht gefunden"});
  const allowed=["Bezahlt","Wird verpackt","Versendet","Erledigt","Storniert"];
  if(allowed.includes(req.body?.status))list[i].status=req.body.status;
  if(typeof req.body?.tracking==="string")list[i].tracking=req.body.tracking.trim();
+ if(typeof req.body?.carrier==="string")list[i].carrier=req.body.carrier.trim().slice(0,30);
  writeOrders(list);res.json(list[i]);
 });
 app.get("/api/admin/returns",auth,(_req,res)=>res.json(readReturns()));
@@ -168,7 +170,8 @@ const upload=multer({storage:multer.diskStorage({
 }),limits:{fileSize:8*1024*1024},fileFilter:(_r,f,cb)=>cb(null,/^image\/(jpeg|png|webp|gif)$/.test(f.mimetype))});
 
 
-app.get("/api/products",(_req,res)=>res.json(readProducts()));
+app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts().filter(p=>!p.hidden&&(!p.publishAt||new Date(p.publishAt).getTime()<=now))});
+app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
   const password=String(req.body?.password||"");
@@ -191,7 +194,7 @@ app.post("/api/admin/products",auth,(req,res)=>{
  const body=req.body||{};
  const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
  const image=String(body.image||"");const images=Array.isArray(body.images)?body.images.map(String).filter(Boolean):[];
- const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
+ const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),publishAt:String(body.publishAt||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
  p.push(item);writeProducts(p);res.status(201).json(item);
 });
 app.put("/api/admin/products/:id",auth,(req,res)=>{
@@ -218,7 +221,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   const line_items=[];
   for(const x of items){
    const p=db.find(y=>y.id===Number(x.id));const qty=Math.max(1,Math.min(10,Number(x.qty)||1));
-   if(!p)return res.status(400).json({error:"Unbekanntes Produkt"});
+   if(!p||p.hidden||(p.publishAt&&new Date(p.publishAt).getTime()>Date.now()))return res.status(400).json({error:"Produkt ist nicht verfügbar"});
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
    line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:p.image?[`${publicBaseUrl}${p.image}`]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
   }
