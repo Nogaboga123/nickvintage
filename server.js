@@ -123,8 +123,16 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   }
   const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
   const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
-  const sessionData={mode:"payment",line_items,shipping_address_collection:{allowed_countries:["DE","AT","CH"]},customer_email:customerEmail||undefined,success_url:`${publicBaseUrl}/?checkout=success`,cancel_url:`${publicBaseUrl}/?checkout=cancelled`});
-  res.json({url:s.url});
+  const session=await stripe.checkout.sessions.create({
+   mode:"payment",
+   line_items,
+   shipping_address_collection:{allowed_countries:["DE","AT","CH"]},
+   customer_email:customerEmail||undefined,
+   metadata:{items:itemMeta},
+   success_url:publicBaseUrl+"/?checkout=success",
+   cancel_url:publicBaseUrl+"/?checkout=cancelled"
+  });
+  res.json({url:session.url});
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
