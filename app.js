@@ -54,6 +54,7 @@ function renderProducts(){
 
 function updateFavUI(){
  const n=document.getElementById("favCount");if(n)n.textContent=favorites.length;
+ const hn=document.getElementById("headerFavCount");if(hn){hn.textContent=favorites.length;hn.style.display=favorites.length?"grid":"none";}
  const box=document.getElementById("favoriteProducts");if(!box)return;
  const list=products.filter(p=>favorites.includes(Number(p.id)));
  box.innerHTML=list.length?list.map(p=>'<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||'p1')+'">'+(imgFor(p)?'<img loading="lazy" src="'+imgFor(p)+'" alt="">':'')+'<span class="badge">'+(p.status==="sold"?'SOLD':(p.new?'NEW':p.tag))+'</span></div><div class="product-info"><h3>'+p.name+'</h3><p>'+p.cat+' · '+p.size+' · '+p.condition+'</p><p class="price">'+euro(p.price)+'</p></div></article>').join(""):'<div class="empty">Du hast noch keine Favoriten gespeichert.</div>';
@@ -77,6 +78,7 @@ function updateCart(){
  const progressText=document.getElementById("shippingProgressText"),progressBar=document.getElementById("shippingProgressBar");
  if(progressText)progressText.textContent=remaining>0?"Noch "+euro(remaining)+" bis kostenloser Versand":"✓ Kostenloser Versand erreicht";
  if(progressBar)progressBar.style.width=pct+"%";
+ const shipNote=document.getElementById("cartShippingNote");if(shipNote)shipNote.textContent=remaining<=0?"Kostenloser Versand für diesen Warenkorb.":"Kostenloser Versand ab 100 €.";
  if(!cart.length){el.innerHTML='<div class="empty"><b>Dein Warenkorb ist leer.</b><br><span>Entdecke deine nächsten Vintage Pieces.</span></div>';document.getElementById("subtotal").textContent=euro(0);return;}
  el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  document.getElementById("subtotal").textContent=euro(total);
@@ -123,7 +125,7 @@ document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
 document.getElementById("closeModal").onclick=closeProduct;document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutModal").classList.remove("open");
 document.getElementById("checkoutBtn").onclick=openCheckout;
-document.querySelectorAll(".category-grid a").forEach(a=>a.onclick=()=>{activeFilter=a.dataset.cat;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===activeFilter))});
+document.querySelectorAll(".category-grid a").forEach(a=>a.onclick=()=>{activeFilter=a.dataset.cat;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===activeFilter));renderProducts()});
 document.getElementById("earlyForm").onsubmit=e=>{e.preventDefault();document.getElementById("earlyMsg").textContent="Danke — deine E-Mail wurde für den Demo-Early-Access vorgemerkt.";e.target.reset()};
 document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
@@ -138,8 +140,7 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
   alert(err.message+"\n\nFür die lokale Demo kannst du die Stripe-Konfiguration aus .env.example einrichten.");
  }finally{btn.disabled=false;btn.textContent="BESTELLUNG PRÜFEN";}
 };
-document.getElementById("menuBtn").onclick=()=>{const nav=document.querySelector(".nav");nav.classList.toggle("mobile-open");document.getElementById("menuBtn").setAttribute("aria-expanded",nav.classList.contains("mobile-open"))};
-document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",()=>document.querySelector(".nav").classList.remove("mobile-open")));
+/* Hamburger menu is handled by the dedicated mobile dropdown in index.html. */
 
 let end=Date.now()+1000*60*60*48+1000*60*17;
 function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
