@@ -134,6 +134,13 @@ app.post("/api/returns",(req,res)=>{
  const item={id:"RET-"+Date.now().toString(36).toUpperCase(),order,email,reason:String(body.reason||"Nicht angegeben"),details:String(body.details||"").trim(),status:"Neu",createdAt:new Date().toISOString()};
  list.unshift(item);writeReturns(list);res.status(201).json({ok:true,id:item.id});
 });
+app.post("/api/order-status",(req,res)=>{
+ const order=String(req.body?.order||"").trim().toLowerCase(),email=String(req.body?.email||"").trim().toLowerCase();
+ if(!order||!email)return res.status(400).json({error:"Bestellnummer und E-Mail eingeben."});
+ const found=readOrders().find(x=>String(x.id).toLowerCase()===order&&String(x.email).toLowerCase()===email);
+ if(!found)return res.status(404).json({error:"Keine passende Bestellung gefunden."});
+ res.json({id:found.id,status:found.status,tracking:found.tracking||"",createdAt:found.createdAt,items:found.items.map(x=>({name:x.name,size:x.size,qty:x.qty}))});
+});
 app.get("/api/admin/orders",auth,(_req,res)=>res.json(readOrders()));
 app.put("/api/admin/orders/:id",auth,(req,res)=>{
  const list=readOrders(),i=list.findIndex(x=>x.id===req.params.id);
