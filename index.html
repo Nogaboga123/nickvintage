@@ -107,6 +107,14 @@
           <option value="high">Preis absteigend</option>
         </select>
       </div>
+      <div class="advanced-filters" id="advancedFilters">
+        <select id="brandFilter"><option value="">Alle Marken</option></select>
+        <select id="sizeFilter"><option value="">Alle Größen</option></select>
+        <select id="colorFilter"><option value="">Alle Farben</option></select>
+        <select id="priceFilter"><option value="">Jeder Preis</option><option value="0-70">Bis 70 €</option><option value="70-100">70–100 €</option><option value="100-99999">Ab 100 €</option></select>
+        <select id="availabilityFilter"><option value="">Alle Artikel</option><option value="available">Nur verfügbar</option><option value="sold">Ausverkauft</option></select>
+        <button type="button" id="resetFilters">FILTER ZURÜCKSETZEN</button>
+      </div>
       <div class="products" id="products"></div>
     </section>
 
