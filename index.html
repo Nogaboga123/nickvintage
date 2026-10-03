@@ -26,6 +26,7 @@
       <a href="retouren.html">Retouren</a>
     </nav>
     <div class="header-actions">
+      <button class="icon-btn" id="favoritesBtn" aria-label="Favoriten">♡<b id="favCount">0</b></button>
       <button class="icon-btn" id="searchBtn" aria-label="Suche">⌕</button>
       <button class="icon-btn cart-btn" id="cartBtn" aria-label="Warenkorb">🛒<b id="cartCount">0</b></button>
       <button class="menu-btn" id="menuBtn">☰</button>
@@ -104,6 +105,16 @@
         </select>
       </div>
       <div class="products" id="products"></div>
+    </section>
+
+    <section class="shop-section" id="favoritesSection" style="display:none">
+      <div class="section-head"><div><p class="eyebrow">SAVED PIECES</p><h2>FAVORITEN</h2></div><button class="btn btn-light" id="closeFavorites">SCHLIESSEN</button></div>
+      <div class="products" id="favoriteProducts"></div>
+    </section>
+
+    <section class="drop-section" id="order-status">
+      <div class="section-head"><div><p class="eyebrow">DEINE BESTELLUNG</p><h2>STATUS</h2></div></div>
+      <div class="drop-box"><form id="statusForm" class="early-form"><label>BESTELLUNG VERFOLGEN</label><div><input id="statusOrder" required placeholder="Bestellnummer"><input id="statusEmail" type="email" required placeholder="E-Mail"><button>PRÜFEN</button></div><small id="statusResult">Bestellnummer und die beim Kauf verwendete E-Mail eingeben.</small></form></div>
     </section>
 
     <section class="categories" id="categories">
