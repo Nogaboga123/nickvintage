@@ -17,6 +17,7 @@ const uploadDir=path.join(__dirname,"uploads");
 fs.mkdirSync(dataDir,{recursive:true}); fs.mkdirSync(uploadDir,{recursive:true});
 const dbFile=path.join(dataDir,"products.json");
 const settingsFile=path.join(dataDir,"settings.json");
+const runtimeSettingsFile=process.env.RENDER?"/tmp/ndvintage-settings.json":settingsFile;
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
 {id:2,name:"Adidas Trackpants Classic",cat:"Trackpants",size:"M",price:69.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"ADIDAS",image:"",stock:1,new:true}
@@ -40,8 +41,24 @@ if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
   earlyPasswordHash:hash("N&D VINTAGE2026!")
 },null,2));
-const readSettings=()=>JSON.parse(fs.readFileSync(settingsFile,"utf8"));
-const writeSettings=s=>fs.writeFileSync(settingsFile,JSON.stringify(s,null,2));
+let runtimeSettings=null;
+const readSettings=()=>{
+ if(runtimeSettings)return runtimeSettings;
+ const base=JSON.parse(fs.readFileSync(settingsFile,"utf8"));
+ runtimeSettings={
+  ...base,
+  siteOpen:process.env.SITE_OPEN==="true"?true:process.env.SITE_OPEN==="false"?false:base.siteOpen,
+  earlyPasswordHash:process.env.EARLY_ACCESS_PASSWORD?hash(process.env.EARLY_ACCESS_PASSWORD):base.earlyPasswordHash
+ };
+ if(fs.existsSync(runtimeSettingsFile) && runtimeSettingsFile!==settingsFile){
+  try{runtimeSettings={...runtimeSettings,...JSON.parse(fs.readFileSync(runtimeSettingsFile,"utf8"))}}catch{}
+ }
+ return runtimeSettings;
+};
+const writeSettings=s=>{
+ runtimeSettings={...s};
+ try{fs.writeFileSync(runtimeSettingsFile,JSON.stringify(runtimeSettings,null,2))}catch(e){console.error("Settings write failed:",e)}
+};
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
