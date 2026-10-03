@@ -137,3 +137,12 @@ button,input,select{border-radius:0}
 .cart-thumb{width:76px;height:92px;flex:0 0 76px}
 .cart-bottom .subtotal{font-size:15px;margin-bottom:8px}
 @media(max-width:520px){.cart{width:100%;max-width:none}.cart-thumb{width:64px;height:78px;flex-basis:64px}.cart-item{gap:10px}.cart-item> b{font-size:12px}}
+
+/* Shop polish: trust, favorite counter, mobile filter scrolling */
+.fav-header{position:relative}
+.fav-header b{display:none;place-items:center;position:absolute;right:-5px;top:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:#111;color:#fff;font-size:8px}
+.benefit-strip{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--nv-line);border-bottom:1px solid var(--nv-line);background:#fff}
+.benefit-strip div{padding:22px clamp(20px,4vw,55px);border-right:1px solid var(--nv-line);display:grid;gap:5px}
+.benefit-strip div:last-child{border-right:0}.benefit-strip b{font-size:10px;letter-spacing:.07em}.benefit-strip span{font-size:10px;color:#777}
+.cart-trust{margin-top:14px;padding-top:14px;border-top:1px solid var(--nv-line);font-size:9px;font-weight:800;letter-spacing:.03em}
+@media(max-width:680px){.benefit-strip{grid-template-columns:1fr}.benefit-strip div{border-right:0;border-bottom:1px solid var(--nv-line);padding:15px 20px}.benefit-strip div:last-child{border-bottom:0}.filters{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}.filter{flex:0 0 auto}.shop-controls{align-items:flex-start}}
