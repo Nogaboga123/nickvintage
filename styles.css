@@ -125,3 +125,15 @@ button,input,select{border-radius:0}
 .recommendation-products{grid-template-columns:repeat(4,1fr)}
 .mini-link{font-size:10px;font-weight:900;letter-spacing:.08em;text-decoration:none;color:#111}
 @media(max-width:900px){.recommendation-products{grid-template-columns:repeat(2,1fr)}}
+
+/* Improved cart + free shipping progress */
+.shipping-progress{padding:0 0 18px;margin-bottom:18px;border-bottom:1px solid var(--nv-line)}
+.shipping-progress-text{font-size:11px;font-weight:800;margin-bottom:9px}
+.shipping-track{height:7px;background:#ddd;overflow:hidden}
+.shipping-track i{display:block;width:0;height:100%;background:#111;transition:width .35s ease}
+.cart-item{align-items:center}
+.cart-item h4{margin-bottom:5px;line-height:1.25}
+.cart-item> b{white-space:nowrap}
+.cart-thumb{width:76px;height:92px;flex:0 0 76px}
+.cart-bottom .subtotal{font-size:15px;margin-bottom:8px}
+@media(max-width:520px){.cart{width:100%;max-width:none}.cart-thumb{width:64px;height:78px;flex-basis:64px}.cart-item{gap:10px}.cart-item> b{font-size:12px}}
