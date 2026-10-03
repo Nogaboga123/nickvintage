@@ -83,7 +83,7 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
     const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,qty:x.qty}:null}).filter(Boolean);
     for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
     writeProducts(db);
-    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",createdAt:new Date().toISOString()});
+    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",carrier:"",createdAt:new Date().toISOString()});
     writeOrders(orders);
    }
   }
@@ -146,7 +146,10 @@ app.post("/api/order-status",(req,res)=>{
  if(!order||!email)return res.status(400).json({error:"Bestellnummer und E-Mail eingeben."});
  const found=readOrders().find(x=>String(x.id).toLowerCase()===order&&String(x.email).toLowerCase()===email);
  if(!found)return res.status(404).json({error:"Keine passende Bestellung gefunden."});
- res.json({id:found.id,status:found.status,tracking:found.tracking||"",carrier:found.carrier||"",createdAt:found.createdAt,items:(found.items||[]).map(x=>({name:x.name,size:x.size,qty:x.qty}))});
+ const carrier=found.carrier||"",tracking=found.tracking||"";
+ const trackingUrls={DHL:"https://www.dhl.de/de/privatkunden/dhl-sendungsverfolgung.html?piececode=",Hermes:"https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation/#",DPD:"https://tracking.dpd.de/status/de_DE/parcel/",UPS:"https://www.ups.com/track?loc=de_DE&tracknum="};
+ const trackingUrl=tracking&&trackingUrls[carrier]?trackingUrls[carrier]+encodeURIComponent(tracking):"";
+ res.json({id:found.id,status:found.status,tracking,carrier,trackingUrl,createdAt:found.createdAt,items:(found.items||[]).map(x=>({name:x.name,size:x.size,qty:x.qty}))});
 });
 app.get("/api/admin/orders",auth,(_req,res)=>res.json(readOrders()));
 app.get("/api/admin/stats",auth,(_req,res)=>{const orders=readOrders().filter(x=>x.status!=="Storniert"),products=readProducts(),revenue=orders.reduce((n,x)=>n+Number(x.total||0),0);let cost=0;for(const o of orders)for(const item of (o.items||[])){const p=products.find(x=>Number(x.id)===Number(item.id));cost+=Number(p?.purchasePrice||0)*Number(item.qty||1)}res.json({revenue,orders:orders.length,average:orders.length?revenue/orders.length:0,estimatedProfit:revenue-cost})});
@@ -227,7 +230,8 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    const p=db.find(y=>y.id===Number(x.id));const qty=Math.max(1,Math.min(10,Number(x.qty)||1));
    if(!p||p.hidden||(p.publishAt&&new Date(p.publishAt).getTime()>Date.now()))return res.status(400).json({error:"Produkt ist nicht verfügbar"});
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
-   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:p.image?[`${publicBaseUrl}${p.image}`]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
+   const checkoutImage=p.image?(p.image.startsWith("http://")||p.image.startsWith("https://")?p.image:publicBaseUrl+p.image):"";
+   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:checkoutImage?[checkoutImage]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
   }
   const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
   const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
