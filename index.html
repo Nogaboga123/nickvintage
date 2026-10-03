@@ -26,7 +26,7 @@
       <a href="retouren.html">Retouren</a>
     </nav>
     <div class="header-actions">
-      <a class="icon-btn" href="favoriten.html" aria-label="Favoriten" style="text-decoration:none">♡</a>
+      <a class="icon-btn fav-header" href="favoriten.html" aria-label="Favoriten" style="text-decoration:none">♡<b id="headerFavCount">0</b></a>
       <button class="icon-btn" id="searchBtn" aria-label="Suche">⌕</button>
       <button class="icon-btn cart-btn" id="cartBtn" aria-label="Warenkorb">🛒<b id="cartCount">0</b></button>
       <button class="menu-btn" id="menuBtn" type="button" aria-label="Menü öffnen" aria-expanded="false">☰</button>
@@ -118,6 +118,8 @@
       <div class="products" id="products"></div>
     </section>
 
+    <section class="benefit-strip"><div><b>✓ GEPRÜFTE PIECES</b><span>Zustand & Maße transparent</span></div><div><b>↗ SCHNELLER VERSAND</b><span>Sicher verpackt aus Deutschland</span></div><div><b>♡ EINZELSTÜCKE</b><span>Wenn weg, dann weg</span></div></section>
+
     <section class="recommend-section" id="newPieces">
       <div class="section-head"><div><p class="eyebrow">JUST IN</p><h2>NEU IM SHOP</h2></div><a href="#shop" class="mini-link">ALLE PIECES →</a></div>
       <div class="products recommendation-products" id="newProducts"></div>
@@ -189,7 +191,7 @@
     <div class="cart-bottom">
       <div class="shipping-progress"><div class="shipping-progress-text" id="shippingProgressText">Noch 100,00 € bis kostenloser Versand</div><div class="shipping-track"><i id="shippingProgressBar"></i></div></div>
       <div class="subtotal"><span>Zwischensumme</span><b id="subtotal">0,00 €</b></div>
-      <small>Versand wird im Checkout berechnet.</small>
+      <small id="cartShippingNote">Versand wird im Checkout berechnet.</small><div class="cart-trust">🔒 Sichere Zahlung · 📦 Versand mit Tracking</div>
       <button class="btn btn-dark full" id="checkoutBtn">ZUM CHECKOUT</button>
     </div>
   </aside>
