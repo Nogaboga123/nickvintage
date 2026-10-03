@@ -17,7 +17,7 @@ const uploadDir=path.join(__dirname,"uploads");
 fs.mkdirSync(dataDir,{recursive:true}); fs.mkdirSync(uploadDir,{recursive:true});
 const dbFile=path.join(dataDir,"products.json");
 const settingsFile=path.join(dataDir,"settings.json");
-const runtimeSettingsFile=process.env.RENDER?"/tmp/ndvintage-settings.json":settingsFile;
+
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
 {id:2,name:"Adidas Trackpants Classic",cat:"Trackpants",size:"M",price:69.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"ADIDAS",image:"",stock:1,new:true}
@@ -50,15 +50,9 @@ const readSettings=()=>{
   siteOpen:process.env.SITE_OPEN==="true"?true:process.env.SITE_OPEN==="false"?false:base.siteOpen,
   earlyPasswordHash:process.env.EARLY_ACCESS_PASSWORD?hash(process.env.EARLY_ACCESS_PASSWORD):base.earlyPasswordHash
  };
- if(fs.existsSync(runtimeSettingsFile) && runtimeSettingsFile!==settingsFile){
-  try{runtimeSettings={...runtimeSettings,...JSON.parse(fs.readFileSync(runtimeSettingsFile,"utf8"))}}catch{}
- }
  return runtimeSettings;
 };
-const writeSettings=s=>{
- runtimeSettings={...s};
- try{fs.writeFileSync(runtimeSettingsFile,JSON.stringify(runtimeSettings,null,2))}catch(e){console.error("Settings write failed:",e)}
-};
+const writeSettings=s=>{ runtimeSettings={...s}; };
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
@@ -92,9 +86,14 @@ function auth(req,res,next){
 }
 app.get("/api/site-settings",auth,(req,res)=>res.json(readSettings()));
 app.put("/api/site-settings",auth,(req,res)=>{
- const cur=readSettings(), body=req.body||{};
+ const cur={...readSettings()}, body=req.body||{};
  if(typeof body.siteOpen==="boolean")cur.siteOpen=body.siteOpen;
- if(typeof body.earlyPassword==="string" && body.earlyPassword.trim())cur.earlyPasswordHash=hash(body.earlyPassword.trim());
+ if(typeof body.earlyPassword==="string" && body.earlyPassword.trim()){
+  if(process.env.EARLY_ACCESS_PASSWORD){
+   return res.status(409).json({error:"Das Early-Access-Passwort wird dauerhaft über Render (EARLY_ACCESS_PASSWORD) verwaltet."});
+  }
+  cur.earlyPasswordHash=hash(body.earlyPassword.trim());
+ }
  writeSettings(cur); res.json({siteOpen:cur.siteOpen});
 });
 
