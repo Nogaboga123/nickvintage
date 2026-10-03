@@ -196,6 +196,7 @@ app.put("/api/admin/products/:id",auth,(req,res)=>{
  if(i<0)return res.status(404).json({error:"Produkt nicht gefunden"});
  p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);writeProducts(p);res.json(p[i]);
 });
+app.post("/api/admin/products/:id/duplicate",auth,(req,res)=>{const p=readProducts(),src=p.find(x=>Number(x.id)===Number(req.params.id));if(!src)return res.status(404).json({error:"Produkt nicht gefunden"});const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;const copy={...src,id,name:src.name+" – Kopie",hidden:true,status:(Number(src.stock||0)>0?"available":"sold")};p.push(copy);writeProducts(p);res.status(201).json(copy)});
 app.delete("/api/admin/products/:id",auth,(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const item=p.find(x=>x.id===id);
  writeProducts(p.filter(x=>x.id!==id));
