@@ -146,3 +146,6 @@ button,input,select{border-radius:0}
 .benefit-strip div:last-child{border-right:0}.benefit-strip b{font-size:10px;letter-spacing:.07em}.benefit-strip span{font-size:10px;color:#777}
 .cart-trust{margin-top:14px;padding-top:14px;border-top:1px solid var(--nv-line);font-size:9px;font-weight:800;letter-spacing:.03em}
 @media(max-width:680px){.benefit-strip{grid-template-columns:1fr}.benefit-strip div{border-right:0;border-bottom:1px solid var(--nv-line);padding:15px 20px}.benefit-strip div:last-child{border-bottom:0}.filters{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}.filter{flex:0 0 auto}.shop-controls{align-items:flex-start}}
+
+/* Mobile shop navigation */
+.mobile-bottom{display:none}@media(max-width:680px){body{padding-bottom:64px}.mobile-bottom{position:fixed;left:0;right:0;bottom:0;z-index:120;display:grid;grid-template-columns:repeat(4,1fr);background:#111;border-top:1px solid #333}.mobile-bottom a,.mobile-bottom button{min-height:58px;display:grid;place-items:center;border:0;border-right:1px solid #333;background:#111;color:#fff;text-decoration:none;font:800 8px Inter,Arial,sans-serif;letter-spacing:.06em;padding:4px}.mobile-bottom button{cursor:pointer}}
