@@ -113,17 +113,20 @@ function auth(req,res,next){
  if(!token || !sessions.has(token)) return res.status(401).json({error:"Nicht autorisiert"});
  next();
 }
-app.get("/api/site-settings",auth,(req,res)=>res.json(readSettings()));
+app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||""})});
+app.get("/api/site-settings",auth,(req,res)=>{const x=readSettings();res.json({siteOpen:!!x.siteOpen,dropName:x.dropName||"DROP 01",dropDate:x.dropDate||""})});
 app.put("/api/site-settings",auth,(req,res)=>{
  const cur={...readSettings()}, body=req.body||{};
  if(typeof body.siteOpen==="boolean")cur.siteOpen=body.siteOpen;
+ if(typeof body.dropName==="string")cur.dropName=body.dropName.trim().slice(0,60);
+ if(typeof body.dropDate==="string")cur.dropDate=body.dropDate.trim().slice(0,40);
  if(typeof body.earlyPassword==="string" && body.earlyPassword.trim()){
   if(process.env.EARLY_ACCESS_PASSWORD){
    return res.status(409).json({error:"Das Early-Access-Passwort wird dauerhaft über Render (EARLY_ACCESS_PASSWORD) verwaltet."});
   }
   cur.earlyPasswordHash=hash(body.earlyPassword.trim());
  }
- writeSettings(cur); res.json({siteOpen:cur.siteOpen});
+ writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||""});
 });
 
 app.post("/api/returns",(req,res)=>{
@@ -188,7 +191,7 @@ app.post("/api/admin/products",auth,(req,res)=>{
  const body=req.body||{};
  const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
  const image=String(body.image||"");const images=Array.isArray(body.images)?body.images.map(String).filter(Boolean):[];
- const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
+ const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
  p.push(item);writeProducts(p);res.status(201).json(item);
 });
 app.put("/api/admin/products/:id",auth,(req,res)=>{
