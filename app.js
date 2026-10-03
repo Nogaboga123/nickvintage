@@ -45,9 +45,9 @@ function renderProducts(){
   <div class="product-image ${p.cls||"p1"} ${p.status==="sold"?"sold":""}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="${p.name}">`:`<div class="fake-photo">${p.code}</div>`}<span class="badge">${p.status==="sold"?"SOLD":(p.new?"NEW":p.tag)}</span></div>
   <div class="product-info"><h3>${p.name}</h3><p>${p.cat} · ${p.size} · ${p.condition}</p><p class="price">${euro(p.price)}</p></div>
  </article>`).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
- document.querySelectorAll(".product").forEach(x=>x.onclick=()=>openProduct(+x.dataset.id));
+ document.querySelectorAll(".product").forEach(x=>x.onclick=e=>{if(e.target.closest(".fav"))return;openProduct(+x.dataset.id)});
 }
-window.toggleFav=id=>{favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));renderProducts();};
+window.toggleFav=id=>{id=Number(id);favorites=favorites.map(Number);favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));renderProducts();};
 function updateCart(){
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
