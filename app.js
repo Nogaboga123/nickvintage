@@ -33,6 +33,12 @@ const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 
 function renderProducts(){
  let list=products.filter(p=>activeFilter==="Alle"||p.cat===activeFilter);
+ const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
+ if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
+ if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
+ if(color)list=list.filter(p=>[p.color,p.colour,p.name].filter(Boolean).join(" ").toLowerCase().includes(color.toLowerCase()));
+ if(price){const [min,max]=price.split("-").map(Number);list=list.filter(p=>Number(p.price)>=min&&Number(p.price)<=max)}
+ if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":p.status!=="sold");
  const sort=document.getElementById("sort").value;
  if(sort==="low")list.sort((a,b)=>a.price-b.price);
  if(sort==="high")list.sort((a,b)=>b.price-a.price);
@@ -133,5 +139,9 @@ document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",()=>do
 
 let end=Date.now()+1000*60*60*48+1000*60*17;
 function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
-renderProducts();updateCart();updateFavUI();
-(async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();renderProducts();updateCart();updateFavUI();}}catch(e){console.error(e)}})();
+function productColor(p){const s=[p.color,p.colour,p.name].filter(Boolean).join(" ").toLowerCase();for(const [needle,label] of [["black","Schwarz"],["schwarz","Schwarz"],["grey","Grau"],["gray","Grau"],["grau","Grau"],["navy","Blau"],["blue","Blau"],["blau","Blau"],["beige","Beige"],["red","Rot"],["rot","Rot"],["white","Weiß"],["weiß","Weiß"],["green","Grün"],["grün","Grün"]])if(s.includes(needle))return label;return ""}
+function fillAdvancedFilters(){const brand=document.getElementById("brandFilter"),size=document.getElementById("sizeFilter"),color=document.getElementById("colorFilter");if(!brand)return;const brands=[...new Set(products.map(p=>p.tag||p.code).filter(Boolean))].sort(),sizes=[...new Set(products.map(p=>p.size).filter(Boolean))].sort(),colors=[...new Set(products.map(productColor).filter(Boolean))].sort();brand.innerHTML='<option value="">Alle Marken</option>'+brands.map(x=>'<option>'+x+'</option>').join("");size.innerHTML='<option value="">Alle Größen</option>'+sizes.map(x=>'<option>'+x+'</option>').join("");color.innerHTML='<option value="">Alle Farben</option>'+colors.map(x=>'<option>'+x+'</option>').join("");}
+["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderProducts));
+document.getElementById("resetFilters")?.addEventListener("click",()=>{["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id).value="");activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()});
+fillAdvancedFilters();renderProducts();updateCart();updateFavUI();
+(async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();fillAdvancedFilters();renderProducts();updateCart();updateFavUI();}}catch(e){console.error(e)}})();
