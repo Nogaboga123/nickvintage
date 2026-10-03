@@ -110,7 +110,11 @@ app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)
 });
 function auth(req,res,next){
  const token=req.cookies?.nv_admin;
- if(!token || !sessions.has(token)) return res.status(401).json({error:"Nicht autorisiert"});
+ const expires=token?sessions.get(token):0;
+ if(!token||!expires||expires<=Date.now()){
+  if(token)sessions.delete(token);
+  return res.status(401).json({error:"Nicht autorisiert"});
+ }
  next();
 }
 app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||""})});
