@@ -71,3 +71,20 @@ button,input,select{border-radius:0}
 .checkout-card{max-width:980px}.checkout-layout{gap:40px}.checkout-card input,.checkout-card select{border-color:#d0cec6;background:#fff}.checkout-card input:focus,.checkout-card select:focus{border-color:#111}.order-summary{background:#eeece5!important}
 @media(max-width:900px){.nav{gap:15px}.products{grid-template-columns:repeat(2,1fr)}.category-grid{grid-template-columns:repeat(2,1fr)}.trust-grid{grid-template-columns:1fr}.trust-grid div{border-left:0;border-top:1px solid var(--nv-line)}.trust-grid div:first-child{border-top:0}.hero{grid-template-columns:1fr}.hero-visual{min-height:420px}.about{grid-template-columns:1fr}}
 @media(max-width:680px){.site-header{height:64px}.nav{display:none;position:absolute;left:0;right:0;top:64px;background:#f7f6f2;border-bottom:1px solid var(--nv-line);padding:15px 20px;flex-direction:column;gap:0}.nav.mobile-open{display:flex}.nav a{padding:13px 0;border-bottom:1px solid var(--nv-line)}.searchbar{top:64px}.hero-copy{padding:55px 20px}.hero-visual{min-height:360px}.shop-controls{align-items:flex-start;flex-direction:column}.products{gap:22px 10px}.category-grid{grid-template-columns:1fr}.category-grid a{min-height:190px}.drop-box{grid-template-columns:1fr}.early-form>div{display:grid;grid-template-columns:1fr}.early-form button{min-height:45px}.footer-main{grid-template-columns:1fr 1fr}.footer-main>div:first-child{grid-column:1/-1}.footer-bottom{flex-direction:column;gap:8px}.cart-item{grid-template-columns:56px 1fr auto}.cart-thumb{width:56px;height:70px}.checkout-layout{grid-template-columns:1fr!important}.product-detail{grid-template-columns:1fr!important}.detail-photo{min-height:330px}}
+
+/* Editorial image system */
+.hero-visual{background-image:url("https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=82&w=1600");background-size:cover;background-position:center}
+.hero-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#1118,#1111 55%,#0002);pointer-events:none}
+.hero-card,.hero-sticker{z-index:1}
+.hero-card{backdrop-filter:blur(2px);background:#1119!important;border:1px solid #fff3}
+.card-b{background:#6b625899!important}
+.about-image{background-image:url("https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&fm=jpg&q=82&w=1400");background-size:cover;background-position:center}
+.about-image:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0001,#0008)}
+.about-image .stamp{z-index:1}
+.product-image img,.detail-photo img,.cart-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.product-image img{transition:transform .5s ease,filter .5s ease}
+.product:hover .product-image img{transform:scale(1.035);filter:contrast(1.03)}
+.detail-photo{overflow:hidden}
+.detail-photo img{object-fit:cover}
+.cart-thumb{overflow:hidden}
+.cart-thumb img{object-fit:cover}
