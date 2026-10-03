@@ -56,7 +56,7 @@ const readSettings=()=>{
  };
  return runtimeSettings;
 };
-const writeSettings=s=>{ runtimeSettings={...s}; };
+const writeSettings=s=>{ runtimeSettings={...s}; try{fs.writeFileSync(settingsFile,JSON.stringify(runtimeSettings,null,2))}catch(e){console.error("Settings speichern:",e.message)} };
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const readReturns=()=>{try{return JSON.parse(fs.readFileSync(returnsFile,"utf8"))}catch{return []}};
 const writeReturns=x=>fs.writeFileSync(returnsFile,JSON.stringify(x,null,2));
@@ -138,7 +138,9 @@ app.post("/api/returns",(req,res)=>{
  const order=String(body.order||"").trim(), email=String(body.email||"").trim();
  if(!order||!email)return res.status(400).json({error:"Bestellnummer und E-Mail sind erforderlich."});
  const list=readReturns();
- const item={id:"RET-"+Date.now().toString(36).toUpperCase(),order,email,reason:String(body.reason||"Nicht angegeben"),details:String(body.details||"").trim(),status:"Neu",createdAt:new Date().toISOString()};
+ const matchingOrder=readOrders().find(x=>String(x.id).toLowerCase()===order.toLowerCase()&&String(x.email).toLowerCase()===email.toLowerCase());
+ if(!matchingOrder)return res.status(404).json({error:"Bestellnummer und E-Mail passen zu keiner Bestellung."});
+ const item={id:"RET-"+Date.now().toString(36).toUpperCase(),order:matchingOrder.id,email:matchingOrder.email,reason:String(body.reason||"Nicht angegeben"),details:String(body.details||"").trim(),status:"Neu",createdAt:new Date().toISOString()};
  list.unshift(item);writeReturns(list);res.status(201).json({ok:true,id:item.id});
 });
 app.post("/api/order-status",(req,res)=>{
