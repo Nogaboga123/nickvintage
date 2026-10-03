@@ -34,7 +34,7 @@ const productDefaults={
 9:{name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
 10:{name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true}
 };
-const readProducts=()=>JSON.parse(fs.readFileSync(dbFile,"utf8")).map(p=>({...productDefaults[p.id],...p,image:p.image||productDefaults[p.id]?.image||""}));
+const readProducts=()=>{const saved=JSON.parse(fs.readFileSync(dbFile,"utf8"));return Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {...def,...p,image:p.image||def.image||"",stock:p.stock??1,status:p.status||"available"};});};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
