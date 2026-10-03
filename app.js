@@ -10,6 +10,19 @@ let products=JSON.parse(localStorage.getItem("nickvintage-products")||"null")||[
 let cart=JSON.parse(localStorage.getItem("nickvintage-cart")||"[]");
 let activeFilter="Alle";
 
+const imageMap={
+  1:"https://images.unsplash.com/photo-1643308002103-f5323c0afa01?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  2:"https://images.unsplash.com/photo-1553227138-bff31be43f47?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  3:"https://images.unsplash.com/photo-1768216330811-18537dd9031e?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  4:"https://images.unsplash.com/photo-1582113943690-eb2d7b74cdb5?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  5:"https://images.unsplash.com/photo-1602744079676-0cb9c31644b6?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  6:"https://images.unsplash.com/photo-1684255864552-7d123dcc2850?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  7:"https://images.unsplash.com/photo-1643308002103-f5323c0afa01?auto=format&fit=crop&fm=jpg&q=82&w=1200",
+  8:"https://images.unsplash.com/photo-1553227138-bff31be43f47?auto=format&fit=crop&fm=jpg&q=82&w=1200"
+};
+const imgFor=p=>p.image||imageMap[p.id]||"";
+
+
 const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 const save=()=>localStorage.setItem("nickvintage-cart",JSON.stringify(cart));
 
@@ -24,7 +37,7 @@ function renderProducts(){
  document.getElementById("productTotal").textContent=list.length+" Pieces";
  document.getElementById("products").innerHTML=list.map(p=>`
  <article class="product" data-id="${p.id}">
-  <div class="product-image ${p.cls||"p1"} ${p.status==="sold"?"sold":""}">${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover">`:`<div class="fake-photo">${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover">`:p.code}</div>`}<span class="badge">${p.status==="sold"?"SOLD":(p.new?"NEW":p.tag)}</span></div>
+  <div class="product-image ${p.cls||"p1"} ${p.status==="sold"?"sold":""}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="${p.name}">`:`<div class="fake-photo">${p.code}</div>`}<span class="badge">${p.status==="sold"?"SOLD":(p.new?"NEW":p.tag)}</span></div>
   <div class="product-info"><h3>${p.name}</h3><p>${p.cat} · ${p.size} · ${p.condition}</p><p class="price">${euro(p.price)}</p></div>
  </article>`).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
  document.querySelectorAll(".product").forEach(x=>x.onclick=()=>openProduct(+x.dataset.id));
@@ -34,7 +47,7 @@ function updateCart(){
  document.getElementById("cartCount").textContent=count;
  const el=document.getElementById("cartItems");
  if(!cart.length){el.innerHTML='<div class="empty">Dein Warenkorb ist leer.</div>';document.getElementById("subtotal").textContent=euro(0);return;}
- el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${p.code}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
+ el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  const total=cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0);
  document.getElementById("subtotal").textContent=euro(total);
 }
@@ -44,7 +57,7 @@ function openCart(){document.getElementById("cart").classList.add("open");docume
 function closeCart(){document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("open")}
 function openProduct(id){
  const p=products.find(x=>x.id===id);
- document.getElementById("modalContent").innerHTML=`<div class="product-detail"><div class="detail-photo ${p.cls||"p1"}">${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover">`:p.code}</div><div class="detail-copy"><p class="eyebrow">${p.cat} · ${p.tag}</p><h2>${p.name}</h2><div class="detail-price">${euro(p.price)}</div><p>Vintage Einzelstück in ${p.condition.toLowerCase()}em Zustand. Bitte beachte die Produktfotos und Maße vor dem Kauf.</p><div class="size-note"><b>SIZE:</b> ${p.size}<br><br><b>ZUSTAND:</b> ${p.condition}<br><br><b>Artikel:</b> Einzelstück</div>${p.status==="sold"?'<button class="btn btn-light" disabled>AUSVERKAUFT</button>':'<button class="btn btn-dark" onclick="addToCart('+p.id+');closeProduct();openCart()">IN DEN WARENKORB</button>'}</div></div>`;
+ document.getElementById("modalContent").innerHTML=`<div class="product-detail"><div class="detail-photo ${p.cls||"p1"}">${imgFor(p)?`<img src="${imgFor(p)}" alt="${p.name}">`:p.code}</div><div class="detail-copy"><p class="eyebrow">${p.cat} · ${p.tag}</p><h2>${p.name}</h2><div class="detail-price">${euro(p.price)}</div><p>Vintage Einzelstück in ${p.condition.toLowerCase()}em Zustand. Bitte beachte die Produktfotos und Maße vor dem Kauf.</p><div class="size-note"><b>SIZE:</b> ${p.size}<br><br><b>ZUSTAND:</b> ${p.condition}<br><br><b>Artikel:</b> Einzelstück</div>${p.status==="sold"?'<button class="btn btn-light" disabled>AUSVERKAUFT</button>':'<button class="btn btn-dark" onclick="addToCart('+p.id+');closeProduct();openCart()">IN DEN WARENKORB</button>'}</div></div>`;
  document.getElementById("productModal").classList.add("open");
 }
 function closeProduct(){document.getElementById("productModal").classList.remove("open")}
