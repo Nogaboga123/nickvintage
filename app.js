@@ -11,7 +11,7 @@ let products=[
 {id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
 let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
-let favorites=[...new Set(JSON.parse(localStorage.getItem("nd-vintage-favorites")||"[]").map(Number).filter(Number.isFinite))];
+let favorites=(()=>{try{const v=JSON.parse(localStorage.getItem("nd-vintage-favorites-v2")||"[]");return Array.isArray(v)?[...new Set(v.map(Number).filter(Number.isFinite))]:[]}catch{return []}})();
 
 const imageMap={
 1:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_599,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/22860c98-b8c4-4779-99f0-893399c1dc00/M+NK+TCH+FLC+FZ+WR+HOODIE.png",
@@ -59,7 +59,7 @@ function toggleFav(id){
  favorites=favorites.map(Number).filter(Number.isFinite);
  favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);
  favorites=[...new Set(favorites)];
- localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));
+ localStorage.setItem("nd-vintage-favorites-v2",JSON.stringify(favorites));
  renderProducts();updateFavUI();
 }
 window.toggleFav=toggleFav;
@@ -77,7 +77,9 @@ window.removeItem=id=>{cart=cart.filter(x=>x.id!==id);save();updateCart();render
 function openCart(){document.getElementById("cart").classList.add("open");document.getElementById("overlay").classList.add("open")}
 function closeCart(){document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("open")}
 function openProduct(id){
- const p=products.find(x=>x.id===id);
+ id=Number(id);const p=products.find(x=>Number(x.id)===id);if(!p)return;
+ location.href="/produkt.html?id="+encodeURIComponent(id);
+ return;
  const seen=JSON.parse(localStorage.getItem("nd-vintage-recent")||"[]").filter(x=>x!==id);localStorage.setItem("nd-vintage-recent",JSON.stringify([id,...seen].slice(0,6)));
  document.getElementById("modalContent").innerHTML=`<div class="product-detail"><div class="detail-photo ${p.cls||"p1"}">${imgFor(p)?`<img src="${imgFor(p)}" alt="${p.name}">`:p.code}</div><div class="detail-copy"><p class="eyebrow">${p.cat} · ${p.tag}</p><h2>${p.name}</h2><div class="detail-price">${euro(p.price)}</div><p>Vintage Einzelstück in ${p.condition.toLowerCase()}em Zustand. Bitte beachte die Produktfotos und Maße vor dem Kauf.</p><div class="size-note"><b>SIZE:</b> ${p.size}<br><br><b>ZUSTAND:</b> ${p.condition}<br><br><b>Artikel:</b> Einzelstück</div>${p.status==="sold"?'<button class="btn btn-light" disabled>AUSVERKAUFT</button>':'<button class="btn btn-dark" onclick="addToCart('+p.id+');closeProduct();openCart()">IN DEN WARENKORB</button>'}</div></div>`;
  document.getElementById("productModal").classList.add("open");
