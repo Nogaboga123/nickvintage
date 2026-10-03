@@ -106,8 +106,10 @@ if(favoritesBtn)favoritesBtn.onclick=()=>{updateFavUI();const s=document.getElem
 const closeFavorites=document.getElementById("closeFavorites");
 if(closeFavorites)closeFavorites.onclick=()=>{const s=document.getElementById("favoritesSection");if(s)s.style.display="none"};
 document.getElementById("statusForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("statusResult");out.textContent="Wird geprüft…";try{const r=await fetch("/api/order-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:document.getElementById("statusOrder").value,email:document.getElementById("statusEmail").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.innerHTML="<b>"+d.id+"</b> · "+d.status+(d.tracking?" · Tracking: "+d.tracking:"")+"<br>"+d.items.map(x=>x.qty+"× "+x.name+" ("+(x.size||"—")+")").join(", ")}catch(err){out.textContent=err.message}};
-document.getElementById("searchBtn").onclick=()=>document.getElementById("searchbar").classList.add("open");
-document.getElementById("closeSearch").onclick=()=>document.getElementById("searchbar").classList.remove("open");
+document.getElementById("searchBtn").onclick=()=>{const bar=document.getElementById("searchbar");bar.classList.toggle("open");if(bar.classList.contains("open"))setTimeout(()=>document.getElementById("searchInput").focus(),0)};
+document.getElementById("closeSearch").onclick=()=>{document.getElementById("searchbar").classList.remove("open");document.getElementById("searchInput").value="";activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()};
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){document.getElementById("shop").scrollIntoView({behavior:"smooth"});document.getElementById("searchbar").classList.remove("open")}});
+
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
 document.getElementById("closeModal").onclick=closeProduct;document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutModal").classList.remove("open");
 document.getElementById("checkoutBtn").onclick=openCheckout;
@@ -126,7 +128,8 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
   alert(err.message+"\n\nFür die lokale Demo kannst du die Stripe-Konfiguration aus .env.example einrichten.");
  }finally{btn.disabled=false;btn.textContent="BESTELLUNG PRÜFEN";}
 };
-document.getElementById("menuBtn").onclick=()=>document.querySelector(".nav").classList.toggle("mobile-open");
+document.getElementById("menuBtn").onclick=()=>{const nav=document.querySelector(".nav");nav.classList.toggle("mobile-open");document.getElementById("menuBtn").setAttribute("aria-expanded",nav.classList.contains("mobile-open"))};
+document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",()=>document.querySelector(".nav").classList.remove("mobile-open")));
 
 let end=Date.now()+1000*60*60*48+1000*60*17;
 function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
