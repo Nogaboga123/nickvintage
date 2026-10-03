@@ -68,6 +68,11 @@ app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)
  earlyTokens.set(token,Date.now()+30*1000);
  res.redirect("/?access="+encodeURIComponent(token));
 });
+function auth(req,res,next){
+ const token=req.cookies?.nv_admin;
+ if(!token || !sessions.has(token)) return res.status(401).json({error:"Nicht autorisiert"});
+ next();
+}
 app.get("/api/site-settings",auth,(req,res)=>res.json(readSettings()));
 app.put("/api/site-settings",auth,(req,res)=>{
  const cur=readSettings(), body=req.body||{};
@@ -81,11 +86,7 @@ const upload=multer({storage:multer.diskStorage({
  filename:(_req,file,cb)=>cb(null,Date.now()+"-"+crypto.randomBytes(5).toString("hex")+path.extname(file.originalname).toLowerCase())
 }),limits:{fileSize:8*1024*1024},fileFilter:(_r,f,cb)=>cb(null,/^image\/(jpeg|png|webp|gif)$/.test(f.mimetype))});
 
-function auth(req,res,next){
- const token=req.cookies?.nv_admin;
- if(!token || !sessions.has(token)) return res.status(401).json({error:"Nicht autorisiert"});
- next();
-}
+
 app.get("/api/products",(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
