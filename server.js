@@ -23,8 +23,16 @@ if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 ],null,2));
 
 const productDefaults={
-  1:{name:"Nike Tech Tracksuit",cat:"Tracksuits",size:"L",price:149.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",new:true},
-  2:{name:"Ralph Lauren Knit Pullover",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"CURATED",code:"RL",image:"https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&fm=jpg&q=88&w=1200",new:true}
+1:{name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+2:{name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+3:{name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+4:{name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+5:{name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+6:{name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+7:{name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+8:{name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+9:{name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
+10:{name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true}
 };
 const readProducts=()=>JSON.parse(fs.readFileSync(dbFile,"utf8")).map(p=>({...productDefaults[p.id],...p,image:p.image||productDefaults[p.id]?.image||""}));
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
