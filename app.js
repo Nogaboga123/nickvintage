@@ -70,6 +70,7 @@ function toggleFav(id){
 }
 window.toggleFav=toggleFav;
 function updateCart(){
+ cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
  const el=document.getElementById("cartItems");
@@ -99,6 +100,7 @@ function closeProduct(){document.getElementById("productModal").classList.remove
 window.addToCart=id=>{const p=products.find(x=>x.id===id);if(!p||p.status==="sold"){alert("Dieses Piece ist ausverkauft.");return}const i=cart.find(x=>x.id===id);if(i)i.qty++;else cart.push({id,qty:1});save();updateCart()};
 function renderCheckout(){
  const items=document.getElementById("checkoutItems");
+ cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
  if(!cart.length){items.innerHTML='<p class="payment-note">Keine Artikel.</p>';document.getElementById("checkoutTotal").textContent=euro(0);return}
  items.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="summary-line"><span>${i.qty}× ${p.name}</span><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  document.getElementById("checkoutTotal").textContent=euro(cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0));
