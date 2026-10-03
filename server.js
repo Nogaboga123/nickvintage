@@ -60,7 +60,7 @@ app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const ok=hash(req.body?.password||"")===readSettings().earlyPasswordHash;
  if(!ok)return res.redirect("/?error=1");
- res.cookie("nv_early","1",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",maxAge:7*24*60*60*1000,path:"/"});
+ res.cookie("nv_early","1",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/"});
  res.redirect("/");
 });
 app.get("/api/site-settings",auth,(req,res)=>res.json(readSettings()));
