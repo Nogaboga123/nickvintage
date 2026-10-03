@@ -9,7 +9,7 @@ let products=[
 {id:8,name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p8",new:true,status:"available"},
 {id:9,name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p9",new:true,status:"available"},
 {id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
-let cart=JSON.parse(localStorage.getItem("nickvintage-cart")||"[]");
+let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
 
 const imageMap={
@@ -28,7 +28,7 @@ const imgFor=p=>p.image||imageMap[p.id]||"";
 
 
 const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
-const save=()=>localStorage.setItem("nickvintage-cart",JSON.stringify(cart));
+const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 
 function renderProducts(){
  let list=products.filter(p=>activeFilter==="Alle"||p.cat===activeFilter);
