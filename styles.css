@@ -88,3 +88,9 @@ button,input,select{border-radius:0}
 .detail-photo img{object-fit:cover}
 .cart-thumb{overflow:hidden}
 .cart-thumb img{object-fit:cover}
+
+/* Rich editorial visuals for hero cards */
+.card-a,.card-b{background-size:cover!important;background-position:center!important;color:#fff}
+.card-a{background-image:linear-gradient(#0002,#0005),url("https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000")!important}
+.card-b{background-image:linear-gradient(#0001,#0006),url("https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&fm=jpg&q=88&w=1000")!important}
+.hero-visual{background-image:url("https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1600")!important;background-size:cover;background-position:center}
