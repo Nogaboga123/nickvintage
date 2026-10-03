@@ -72,9 +72,13 @@ function updateCart(){
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
  const el=document.getElementById("cartItems");
- if(!cart.length){el.innerHTML='<div class="empty">Dein Warenkorb ist leer.</div>';document.getElementById("subtotal").textContent=euro(0);return;}
+ const valid=cart.map(i=>({i,p:products.find(x=>Number(x.id)===Number(i.id))})).filter(x=>x.p);
+ const total=valid.reduce((s,x)=>s+Number(x.p.price)*x.i.qty,0),goal=100,remaining=Math.max(0,goal-total),pct=Math.min(100,total/goal*100);
+ const progressText=document.getElementById("shippingProgressText"),progressBar=document.getElementById("shippingProgressBar");
+ if(progressText)progressText.textContent=remaining>0?"Noch "+euro(remaining)+" bis kostenloser Versand":"✓ Kostenloser Versand erreicht";
+ if(progressBar)progressBar.style.width=pct+"%";
+ if(!cart.length){el.innerHTML='<div class="empty"><b>Dein Warenkorb ist leer.</b><br><span>Entdecke deine nächsten Vintage Pieces.</span></div>';document.getElementById("subtotal").textContent=euro(0);return;}
  el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
- const total=cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0);
  document.getElementById("subtotal").textContent=euro(total);
 }
 window.changeQty=(id,d)=>{const i=cart.find(x=>x.id===id);if(!i)return;i.qty+=d;if(i.qty<=0)cart=cart.filter(x=>x.id!==id);save();updateCart();renderCheckout();};
