@@ -112,3 +112,10 @@ button,input,select{border-radius:0}
 .mobile-menu a:last-child{border-bottom:0}
 .menu-btn{z-index:101}
 @media(max-width:900px){.menu-btn{display:grid!important}}
+
+/* Advanced shop filters */
+.advanced-filters{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr)) auto;gap:8px;margin:0 0 28px}
+.advanced-filters select,.advanced-filters button{min-height:42px;border:1px solid #d0cfc9;background:#fff;padding:0 11px;font-size:10px;font-weight:700}
+.advanced-filters button{background:#111;color:#fff;cursor:pointer;letter-spacing:.05em}
+@media(max-width:900px){.advanced-filters{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.advanced-filters{grid-template-columns:1fr 1fr}.advanced-filters button{grid-column:1/-1}}
