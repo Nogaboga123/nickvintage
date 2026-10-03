@@ -47,7 +47,8 @@ function renderProducts(){
  </article>`).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
  document.querySelectorAll(".product").forEach(x=>x.onclick=e=>{if(e.target.closest(".fav"))return;openProduct(+x.dataset.id)});
 }
-window.toggleFav=id=>{id=Number(id);favorites=favorites.map(Number);favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));renderProducts();};
+function updateFavUI(){const n=document.getElementById("favCount");if(n)n.textContent=favorites.length;const box=document.getElementById("favoriteProducts");if(box){const list=products.filter(p=>favorites.map(Number).includes(Number(p.id)));box.innerHTML=list.length?list.map(p=>'<article class="product" onclick="openProduct('+p.id+')"><div class="product-image '+(p.cls||'p1')+'">'+(imgFor(p)?'<img loading="lazy" src="'+imgFor(p)+'" alt="'+p.name+'">':'')+'<span class="badge">'+(p.status==='sold'?'SOLD':(p.new?'NEW':p.tag))+'</span></div><div class="product-info"><h3>'+p.name+'</h3><p>'+p.cat+' · '+p.size+' · '+p.condition+'</p><p class="price">'+euro(p.price)+'</p></div></article>').join(''):'<div class="empty">Du hast noch keine Favoriten gespeichert.</div>'}}
+window.toggleFav=id=>{id=Number(id);favorites=favorites.map(Number);favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem("nd-vintage-favorites",JSON.stringify(favorites));renderProducts();updateFavUI();};
 function updateCart(){
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
@@ -63,6 +64,7 @@ function openCart(){document.getElementById("cart").classList.add("open");docume
 function closeCart(){document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("open")}
 function openProduct(id){
  const p=products.find(x=>x.id===id);
+ const seen=JSON.parse(localStorage.getItem("nd-vintage-recent")||"[]").filter(x=>x!==id);localStorage.setItem("nd-vintage-recent",JSON.stringify([id,...seen].slice(0,6)));
  document.getElementById("modalContent").innerHTML=`<div class="product-detail"><div class="detail-photo ${p.cls||"p1"}">${imgFor(p)?`<img src="${imgFor(p)}" alt="${p.name}">`:p.code}</div><div class="detail-copy"><p class="eyebrow">${p.cat} · ${p.tag}</p><h2>${p.name}</h2><div class="detail-price">${euro(p.price)}</div><p>Vintage Einzelstück in ${p.condition.toLowerCase()}em Zustand. Bitte beachte die Produktfotos und Maße vor dem Kauf.</p><div class="size-note"><b>SIZE:</b> ${p.size}<br><br><b>ZUSTAND:</b> ${p.condition}<br><br><b>Artikel:</b> Einzelstück</div>${p.status==="sold"?'<button class="btn btn-light" disabled>AUSVERKAUFT</button>':'<button class="btn btn-dark" onclick="addToCart('+p.id+');closeProduct();openCart()">IN DEN WARENKORB</button>'}</div></div>`;
  document.getElementById("productModal").classList.add("open");
 }
@@ -78,6 +80,9 @@ function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");retur
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
 document.getElementById("searchInput").oninput=renderProducts;
+document.getElementById("favoritesBtn").onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");s.style.display="block";s.scrollIntoView({behavior:"smooth"})};
+document.getElementById("closeFavorites").onclick=()=>document.getElementById("favoritesSection").style.display="none";
+document.getElementById("statusForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("statusResult");out.textContent="Wird geprüft…";try{const r=await fetch("/api/order-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:document.getElementById("statusOrder").value,email:document.getElementById("statusEmail").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.innerHTML="<b>"+d.id+"</b> · "+d.status+(d.tracking?" · Tracking: "+d.tracking:"")+"<br>"+d.items.map(x=>x.qty+"× "+x.name+" ("+(x.size||"—")+")").join(", ")}catch(err){out.textContent=err.message}};
 document.getElementById("searchBtn").onclick=()=>document.getElementById("searchbar").classList.add("open");
 document.getElementById("closeSearch").onclick=()=>document.getElementById("searchbar").classList.remove("open");
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
@@ -102,4 +107,4 @@ document.getElementById("menuBtn").onclick=()=>document.querySelector(".nav").cl
 
 let end=Date.now()+1000*60*60*48+1000*60*17;
 function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
-(async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();renderProducts();updateCart();}}catch(e){console.error(e)}})();
+(async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();renderProducts();updateCart();updateFavUI();}}catch(e){console.error(e)}})();
