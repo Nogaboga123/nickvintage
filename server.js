@@ -26,6 +26,7 @@ const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||'$2b$12$3j8kVYwP9f8f5G0mG7dR6u5XQ6w4b8gF2dQ3Y7vYVQvM4w2u1a0mK';
 const sessions=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
+const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
 
 app.use(cors({origin:false})); app.use(express.json({limit:"2mb"})); app.use(cookieParser()); app.use(express.static(__dirname));
 app.use("/uploads",express.static(uploadDir));
@@ -83,9 +84,9 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    const p=db.find(y=>y.id===Number(x.id));const qty=Math.max(1,Math.min(10,Number(x.qty)||1));
    if(!p)return res.status(400).json({error:"Unbekanntes Produkt"});
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
-   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:p.image?[`${process.env.PUBLIC_BASE_URL||"http://localhost:4242"}${p.image}`]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
+   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:p.image?[`${publicBaseUrl}${p.image}`]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
   }
-  const s=await stripe.checkout.sessions.create({mode:"payment",line_items,shipping_address_collection:{allowed_countries:["DE","AT","CH"]},success_url:`${process.env.PUBLIC_BASE_URL||"http://localhost:4242"}/?checkout=success`,cancel_url:`${process.env.PUBLIC_BASE_URL||"http://localhost:4242"}/?checkout=cancelled`,metadata:{shop:"NickVintage"}});
+  const s=await stripe.checkout.sessions.create({mode:"payment",line_items,shipping_address_collection:{allowed_countries:["DE","AT","CH"]},success_url:`${publicBaseUrl}/?checkout=success`,cancel_url:`${publicBaseUrl}/?checkout=cancelled`,metadata:{shop:"NickVintage"}});
   res.json({url:s.url});
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
