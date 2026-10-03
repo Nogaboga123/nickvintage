@@ -17,6 +17,8 @@ const uploadDir=path.join(__dirname,"uploads");
 fs.mkdirSync(dataDir,{recursive:true}); fs.mkdirSync(uploadDir,{recursive:true});
 const dbFile=path.join(dataDir,"products.json");
 const settingsFile=path.join(dataDir,"settings.json");
+const returnsFile=path.join(dataDir,"returns.json");
+if(!fs.existsSync(returnsFile)) fs.writeFileSync(returnsFile,"[]");
 
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
@@ -54,6 +56,8 @@ const readSettings=()=>{
 };
 const writeSettings=s=>{ runtimeSettings={...s}; };
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
+const readReturns=()=>{try{return JSON.parse(fs.readFileSync(returnsFile,"utf8"))}catch{return []}};
+const writeReturns=x=>fs.writeFileSync(returnsFile,JSON.stringify(x,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
@@ -95,6 +99,23 @@ app.put("/api/site-settings",auth,(req,res)=>{
   cur.earlyPasswordHash=hash(body.earlyPassword.trim());
  }
  writeSettings(cur); res.json({siteOpen:cur.siteOpen});
+});
+
+app.post("/api/returns",(req,res)=>{
+ const body=req.body||{};
+ const order=String(body.order||"").trim(), email=String(body.email||"").trim();
+ if(!order||!email)return res.status(400).json({error:"Bestellnummer und E-Mail sind erforderlich."});
+ const list=readReturns();
+ const item={id:"RET-"+Date.now().toString(36).toUpperCase(),order,email,reason:String(body.reason||"Nicht angegeben"),details:String(body.details||"").trim(),status:"Neu",createdAt:new Date().toISOString()};
+ list.unshift(item);writeReturns(list);res.status(201).json({ok:true,id:item.id});
+});
+app.get("/api/admin/returns",auth,(_req,res)=>res.json(readReturns()));
+app.put("/api/admin/returns/:id",auth,(req,res)=>{
+ const list=readReturns(), i=list.findIndex(x=>x.id===req.params.id);
+ if(i<0)return res.status(404).json({error:"Retoure nicht gefunden"});
+ const allowed=["Neu","In Prüfung","Genehmigt","Erledigt"];
+ if(allowed.includes(req.body?.status))list[i].status=req.body.status;
+ writeReturns(list);res.json(list[i]);
 });
 
 const upload=multer({storage:multer.diskStorage({
