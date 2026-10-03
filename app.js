@@ -100,7 +100,7 @@ document.getElementById("products").addEventListener("click",e=>{
 });
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
-document.getElementById("searchInput").oninput=()=>{activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts();};
+document.getElementById("searchInput").oninput=()=>{};
 const favoritesBtn=document.getElementById("favoritesBtn");
 if(favoritesBtn)favoritesBtn.onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");if(s){s.style.display="block";s.scrollIntoView({behavior:"smooth"})}};
 const closeFavorites=document.getElementById("closeFavorites");
@@ -108,7 +108,7 @@ if(closeFavorites)closeFavorites.onclick=()=>{const s=document.getElementById("f
 document.getElementById("statusForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("statusResult");out.textContent="Wird geprüft…";try{const r=await fetch("/api/order-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:document.getElementById("statusOrder").value,email:document.getElementById("statusEmail").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.innerHTML="<b>"+d.id+"</b> · "+d.status+(d.tracking?" · Tracking: "+d.tracking:"")+"<br>"+d.items.map(x=>x.qty+"× "+x.name+" ("+(x.size||"—")+")").join(", ")}catch(err){out.textContent=err.message}};
 document.getElementById("searchBtn").onclick=()=>{const bar=document.getElementById("searchbar");bar.classList.toggle("open");if(bar.classList.contains("open"))setTimeout(()=>document.getElementById("searchInput").focus(),0)};
 document.getElementById("closeSearch").onclick=()=>{document.getElementById("searchbar").classList.remove("open");document.getElementById("searchInput").value="";activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()};
-document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();renderProducts();}});
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=e.currentTarget.value.trim();if(q)location.href="/suche.html?q="+encodeURIComponent(q)}});
 
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
 document.getElementById("closeModal").onclick=closeProduct;document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutModal").classList.remove("open");
