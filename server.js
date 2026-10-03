@@ -31,7 +31,8 @@ if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
 const readSettings=()=>JSON.parse(fs.readFileSync(settingsFile,"utf8"));
 const writeSettings=s=>fs.writeFileSync(settingsFile,JSON.stringify(s,null,2));
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
-const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||'$2b$12$3j8kVYwP9f8f5G0mG7dR6u5XQ6w4b8gF2dQ3Y7vYVQvM4w2u1a0mK';
+const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
+const adminPassword=process.env.ADMIN_PASSWORD||"NICKVINTAGE2026!";
 const sessions=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
@@ -72,7 +73,7 @@ app.get("/api/products",(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
   const password=String(req.body?.password||"");
-  const ok=await bcrypt.compare(password,adminPasswordHash);
+  const ok=adminPasswordHash ? await bcrypt.compare(password,adminPasswordHash) : password===adminPassword;
   if(!ok)return res.status(401).json({ok:false,error:"Falsches Admin-Passwort"});
   const token=crypto.randomBytes(32).toString("hex");
   sessions.set(token,Date.now()+12*60*60*1000);
@@ -85,6 +86,13 @@ app.post("/api/admin/logout",(req,res)=>{
  if(token)sessions.delete(token);
  res.clearCookie("nv_admin",{path:"/"});
  res.json({ok:true});
+});
+app.post("/api/admin/products",auth,(req,res)=>{
+ const p=readProducts();
+ const body=req.body||{};
+ const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
+ const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),stock:Math.max(0,Number(body.stock)||0),image:String(body.image||""),new:!!body.new};
+ p.push(item);writeProducts(p);res.status(201).json(item);
 });
 app.put("/api/admin/products/:id",auth,(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const i=p.findIndex(x=>x.id===id);
@@ -113,7 +121,9 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
    line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:p.image?[`${publicBaseUrl}${p.image}`]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
   }
-  const s=await stripe.checkout.sessions.create({mode:"payment",line_items,shipping_address_collection:{allowed_countries:["DE","AT","CH"]},success_url:`${publicBaseUrl}/?checkout=success`,cancel_url:`${publicBaseUrl}/?checkout=cancelled`,metadata:{shop:"NickVintage"}});
+  const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
+  const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
+  const sessionData={mode:"payment",line_items,shipping_address_collection:{allowed_countries:["DE","AT","CH"]},customer_email:customerEmail||undefined,success_url:`${publicBaseUrl}/?checkout=success`,cancel_url:`${publicBaseUrl}/?checkout=cancelled`});
   res.json({url:s.url});
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
