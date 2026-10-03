@@ -96,8 +96,10 @@ function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");retur
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
 document.getElementById("searchInput").oninput=renderProducts;
-document.getElementById("favoritesBtn").onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");s.style.display="block";s.scrollIntoView({behavior:"smooth"})};
-document.getElementById("closeFavorites").onclick=()=>document.getElementById("favoritesSection").style.display="none";
+const favoritesBtn=document.getElementById("favoritesBtn");
+if(favoritesBtn)favoritesBtn.onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");if(s){s.style.display="block";s.scrollIntoView({behavior:"smooth"})}};
+const closeFavorites=document.getElementById("closeFavorites");
+if(closeFavorites)closeFavorites.onclick=()=>{const s=document.getElementById("favoritesSection");if(s)s.style.display="none"};
 document.getElementById("statusForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("statusResult");out.textContent="Wird geprüft…";try{const r=await fetch("/api/order-status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order:document.getElementById("statusOrder").value,email:document.getElementById("statusEmail").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.innerHTML="<b>"+d.id+"</b> · "+d.status+(d.tracking?" · Tracking: "+d.tracking:"")+"<br>"+d.items.map(x=>x.qty+"× "+x.name+" ("+(x.size||"—")+")").join(", ")}catch(err){out.textContent=err.message}};
 document.getElementById("searchBtn").onclick=()=>document.getElementById("searchbar").classList.add("open");
 document.getElementById("closeSearch").onclick=()=>document.getElementById("searchbar").classList.remove("open");
@@ -123,4 +125,5 @@ document.getElementById("menuBtn").onclick=()=>document.querySelector(".nav").cl
 
 let end=Date.now()+1000*60*60*48+1000*60*17;
 function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
+renderProducts();updateCart();updateFavUI();
 (async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();renderProducts();updateCart();updateFavUI();}}catch(e){console.error(e)}})();
