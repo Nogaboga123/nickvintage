@@ -23,18 +23,18 @@ if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 ],null,2));
 
 const productDefaults={
-1:{name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-2:{name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-3:{name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-4:{name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-5:{name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-6:{name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-7:{name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-8:{name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-9:{name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true},
-10:{name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1000",new:true}
+1:{name:"Nike Tech Fleece Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://www.jdsports.gr/2745852-product_vertical/nike-m-nk-tch-flc-fz-wr-hoodie.jpg",new:true},
+2:{name:"Nike Tech Fleece Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://leclubsportifmaroc.com/cdn/shop/files/M_NK_TCH_FLC_JGGR_014f5f86-7b77-4251-bed5-d3ae567aca92.jpg?v=1739097686",new:true},
+3:{name:"Nike Tech Fleece Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://www.knvbshop.nl/media/catalog/product/cache/d81c8dc66c69ceb69419c2e7e72e896d/2/8/289082_nike-tech-fleece-sportswear-vest-donkerblauw-zwart.jpg",new:true},
+4:{name:"Ralph Lauren Crewneck — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://cdn.sarenza.cloud/_img/productsv4/0000256753/0000256753_470560_09.jpg",new:true},
+5:{name:"Ralph Lauren Crewneck — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://d13qso5xfejx18.cloudfront.net/product-media/95UR/580/580/0G0A5597.jpg",new:true},
+6:{name:"Ralph Lauren Crewneck — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://cdn-images.farfetch-contents.com/20/54/14/32/20541432_51601566_600.jpg",new:true},
+7:{name:"Ralph Lauren Crewneck — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",image:"https://cdn.media.amplience.net/i/frasersdev/33284540_o.jpg?v=20260519133125",new:true},
+8:{name:"Nike Tech Fleece Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://extrabutterny.com/cdn/shop/files/FB7921-010-2_x2400.jpg?v=1704829050",new:true},
+9:{name:"Nike Tech Fleece Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://i.ebayimg.com/images/g/bfQAAeSwEpNp41mT/s-l1200.jpg",new:true},
+10:{name:"Nike Tech Fleece Jogger — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://samtabak.com/cdn/shop/files/AURORA_HV0959-010_PHSYMG01-2000.jpg?v=1747844825",new:true}
 };
-const readProducts=()=>{const saved=JSON.parse(fs.readFileSync(dbFile,"utf8"));return Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {...def,...p,image:p.image||def.image||"",stock:p.stock??1,status:p.status||"available"};});};
+const readProducts=()=>{const saved=JSON.parse(fs.readFileSync(dbFile,"utf8"));return Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {...def,stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
