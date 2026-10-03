@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
-Sitemap: https://nickvintage.de/sitemap.xml
+Disallow: /data/
+Sitemap: https://DEINE-DOMAIN.DE/sitemap.xml
