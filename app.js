@@ -1,24 +1,29 @@
 let products=JSON.parse(localStorage.getItem("nickvintage-products")||"null")||[
-{id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",cls:"p1",new:true,status:"available",description:"Vintage Einzelstück."},
-{id:2,name:"Adidas Trackpants Classic",cat:"Trackpants",size:"M",price:69.99,condition:"Sehr gut",tag:"ONE OF ONE",code:"ADIDAS",cls:"p2",new:true,status:"available",description:"Vintage Einzelstück."},
-{id:3,name:"Lacoste Vintage Sweater",cat:"Sweater",size:"L",price:79.99,condition:"Gut",tag:"VINTAGE",code:"LACOSTE",cls:"p3",new:true,status:"available"},
-{id:4,name:"Nike Tracksuit 2000s",cat:"Tracksuits",size:"M",price:149.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",cls:"p4",new:true,status:"available"},
-{id:5,name:"Ralph Lauren Denim Jacket",cat:"Jacken",size:"L",price:94.99,condition:"Sehr gut",tag:"CURATED",code:"RL",cls:"p5",new:false,status:"available"},
-{id:6,name:"Adidas Zip Hoodie",cat:"Hoodies",size:"XL",price:74.99,condition:"Gut",tag:"VINTAGE",code:"ADIDAS",cls:"p6",new:false,status:"available"},
-{id:7,name:"Levi's 501 Faded Denim",cat:"Jeans",size:"W32/L32",price:84.99,condition:"Sehr gut",tag:"90s",code:"501",cls:"p7",new:false,status:"available"},
-{id:8,name:"Nike Spellout Longsleeve",cat:"Shirts",size:"M",price:59.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",cls:"p8",new:false,status:"available"}];
+{id:1,name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p1",new:true,status:"available",description:"Nike Tech Tracksuit in Schwarz."},
+{id:2,name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p2",new:true,status:"available",description:"Nike Tech Tracksuit in Grau."},
+{id:3,name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p3",new:true,status:"available",description:"Nike Tech Tracksuit in Navy."},
+{id:4,name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p4",new:true,status:"available",description:"Ralph Lauren Pullover in Navy."},
+{id:5,name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p5",new:true,status:"available",description:"Ralph Lauren Pullover in Beige."},
+{id:6,name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p6",new:true,status:"available",description:"Ralph Lauren Pullover in Grau."},
+{id:7,name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p7",new:true,status:"available",description:"Ralph Lauren Pullover in Schwarz."},
+{id:8,name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p8",new:true,status:"available",description:"Nike Tech Hoodie in Schwarz."},
+{id:9,name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p9",new:true,status:"available",description:"Nike Tech Hoodie in Grau."},
+{id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available",description:"Nike Tech Pants in Schwarz."}
+];
 let cart=JSON.parse(localStorage.getItem("nickvintage-cart")||"[]");
 let activeFilter="Alle";
 
 const imageMap={
-  1:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  2:"https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  3:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  4:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  5:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  6:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  7:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1200",
-  8:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1200"
+1:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+2:"https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+3:"https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+4:"https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+5:"https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+6:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+7:"https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+8:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+9:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",
+10:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&fm=jpg&q=88&w=1000"
 };
 const imgFor=p=>p.image||imageMap[p.id]||"";
 
