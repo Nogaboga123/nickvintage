@@ -18,7 +18,9 @@ fs.mkdirSync(dataDir,{recursive:true}); fs.mkdirSync(uploadDir,{recursive:true})
 const dbFile=path.join(dataDir,"products.json");
 const settingsFile=path.join(dataDir,"settings.json");
 const returnsFile=path.join(dataDir,"returns.json");
+const ordersFile=path.join(dataDir,"orders.json");
 if(!fs.existsSync(returnsFile)) fs.writeFileSync(returnsFile,"[]");
+if(!fs.existsSync(ordersFile)) fs.writeFileSync(ordersFile,"[]");
 
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
@@ -58,14 +60,37 @@ const writeSettings=s=>{ runtimeSettings={...s}; };
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const readReturns=()=>{try{return JSON.parse(fs.readFileSync(returnsFile,"utf8"))}catch{return []}};
 const writeReturns=x=>fs.writeFileSync(returnsFile,JSON.stringify(x,null,2));
+const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ordersFile,"utf8"))}catch{return []}};
+const writeOrders=x=>fs.writeFileSync(ordersFile,JSON.stringify(x,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
 const earlyTokens=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
+const stripeWebhookSecret=process.env.STRIPE_WEBHOOK_SECRET||"";
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
 
-app.use(cors({origin:false})); app.use(express.json({limit:"2mb"})); app.use(cookieParser());
+app.use(cors({origin:false}));
+app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,res)=>{
+ try{
+  if(!stripe||!stripeWebhookSecret)return res.status(503).end();
+  const event=stripe.webhooks.constructEvent(req.body,req.headers["stripe-signature"],stripeWebhookSecret);
+  if(event.type==="checkout.session.completed"){
+   const s=event.data.object, id=String(s.id);
+   const orders=readOrders();
+   if(!orders.some(o=>o.stripeSessionId===id)){
+    const parsed=String(s.metadata?.items||"").split(",").filter(Boolean).map(v=>{const [pid,qty]=v.split("x").map(Number);return {id:pid,qty}});
+    const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,qty:x.qty}:null}).filter(Boolean);
+    for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
+    writeProducts(db);
+    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",createdAt:new Date().toISOString()});
+    writeOrders(orders);
+   }
+  }
+  res.json({received:true});
+ }catch(e){console.error("Webhook:",e.message);res.status(400).send("Webhook error")}
+});
+app.use(express.json({limit:"2mb"})); app.use(cookieParser());
 app.use((req,res,next)=>{
  const protectedPage=req.path==="/" || req.path==="/index.html";
  if(!protectedPage || readSettings().siteOpen) return next();
@@ -108,6 +133,15 @@ app.post("/api/returns",(req,res)=>{
  const list=readReturns();
  const item={id:"RET-"+Date.now().toString(36).toUpperCase(),order,email,reason:String(body.reason||"Nicht angegeben"),details:String(body.details||"").trim(),status:"Neu",createdAt:new Date().toISOString()};
  list.unshift(item);writeReturns(list);res.status(201).json({ok:true,id:item.id});
+});
+app.get("/api/admin/orders",auth,(_req,res)=>res.json(readOrders()));
+app.put("/api/admin/orders/:id",auth,(req,res)=>{
+ const list=readOrders(),i=list.findIndex(x=>x.id===req.params.id);
+ if(i<0)return res.status(404).json({error:"Bestellung nicht gefunden"});
+ const allowed=["Bezahlt","Wird verpackt","Versendet","Erledigt","Storniert"];
+ if(allowed.includes(req.body?.status))list[i].status=req.body.status;
+ if(typeof req.body?.tracking==="string")list[i].tracking=req.body.tracking.trim();
+ writeOrders(list);res.json(list[i]);
 });
 app.get("/api/admin/returns",auth,(_req,res)=>res.json(readReturns()));
 app.put("/api/admin/returns/:id",auth,(req,res)=>{
