@@ -225,7 +225,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    shipping_address_collection:{allowed_countries:["DE","AT","CH"]},
    customer_email:customerEmail||undefined,
    metadata:{items:itemMeta},
-   success_url:publicBaseUrl+"/?checkout=success",
+   success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
    cancel_url:publicBaseUrl+"/?checkout=cancelled"
   });
   res.json({url:session.url});
