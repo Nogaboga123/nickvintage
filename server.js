@@ -38,13 +38,13 @@ const readProducts=()=>{const saved=JSON.parse(fs.readFileSync(dbFile,"utf8"));r
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
-  earlyPasswordHash:hash("NICKVINTAGE2026!")
+  earlyPasswordHash:hash("N&D VINTAGE2026!")
 },null,2));
 const readSettings=()=>JSON.parse(fs.readFileSync(settingsFile,"utf8"));
 const writeSettings=s=>fs.writeFileSync(settingsFile,JSON.stringify(s,null,2));
 const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
-const adminPassword=process.env.ADMIN_PASSWORD||"NICKVINTAGE2026!";
+const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
@@ -53,7 +53,7 @@ app.use(cors({origin:false})); app.use(express.json({limit:"2mb"})); app.use(coo
 app.use((req,res,next)=>{
  const protectedPage=req.path==="/" || req.path==="/index.html";
  if(!protectedPage || readSettings().siteOpen || req.cookies?.nv_early==="1") return next();
- res.status(200).send(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NickVintage — Early Access</title><style>*{box-sizing:border-box}body{margin:0;background:#111;color:#fff;font-family:Inter,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}.box{width:min(460px,100%);border:1px solid #333;padding:42px;background:#171717}.ey{font-size:10px;letter-spacing:.2em;font-weight:800;color:#aaa}.logo{font-size:28px;font-weight:900;letter-spacing:-.06em;margin:12px 0 35px}.logo span{font-weight:400}.box h1{font-size:48px;line-height:.9;letter-spacing:-.07em;margin:0 0 14px}.box p{color:#999;font-size:13px;line-height:1.6}.box form{display:flex;gap:8px;margin-top:25px}.box input{flex:1;background:#222;color:#fff;border:1px solid #444;padding:15px;outline:0}.box button{background:#fff;color:#111;border:0;padding:0 18px;font-weight:900;cursor:pointer}.err{color:#ff8d8d!important;font-size:11px!important;margin-top:12px}</style></head><body><div class="box"><div class="ey">NICKVINTAGE · EARLY ACCESS</div><div class="logo">NICK<span>VINTAGE</span></div><h1>EARLY<br>ACCESS.</h1><p>Der Shop ist noch nicht öffentlich geöffnet. Wenn du einen Early-Access-Code hast, kannst du jetzt eintreten.</p><form method="POST" action="/api/early-access"><input name="password" type="password" placeholder="Early-Access-Passwort" required autofocus><button>ÖFFNEN</button></form>\${req.query.error?'<p class="err">Falsches Passwort.</p>':''}</div></body></html>`);
+ res.status(200).send(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N&D VINTAGE — Early Access</title><style>*{box-sizing:border-box}body{margin:0;background:#111;color:#fff;font-family:Inter,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}.box{width:min(460px,100%);border:1px solid #333;padding:42px;background:#171717}.ey{font-size:10px;letter-spacing:.2em;font-weight:800;color:#aaa}.logo{font-size:28px;font-weight:900;letter-spacing:-.06em;margin:12px 0 35px}.logo span{font-weight:400}.box h1{font-size:48px;line-height:.9;letter-spacing:-.07em;margin:0 0 14px}.box p{color:#999;font-size:13px;line-height:1.6}.box form{display:flex;gap:8px;margin-top:25px}.box input{flex:1;background:#222;color:#fff;border:1px solid #444;padding:15px;outline:0}.box button{background:#fff;color:#111;border:0;padding:0 18px;font-weight:900;cursor:pointer}.err{color:#ff8d8d!important;font-size:11px!important;margin-top:12px}</style></head><body><div class="box"><div class="ey">N&D VINTAGE · EARLY ACCESS</div><div class="logo">N&amp;D <span>VINTAGE</span></div><h1>EARLY<br>ACCESS.</h1><p>Der Shop ist noch nicht öffentlich geöffnet. Wenn du einen Early-Access-Code hast, kannst du jetzt eintreten.</p><form method="POST" action="/api/early-access"><input name="password" type="password" placeholder="Early-Access-Passwort" required autofocus><button>ÖFFNEN</button></form>\${req.query.error?'<p class="err">Falsches Passwort.</p>':''}</div></body></html>`);
 });
 app.use("/uploads",express.static(uploadDir));
 app.use(express.static(__dirname,{index:false}));
@@ -148,4 +148,4 @@ app.post("/api/create-checkout-session",async(req,res)=>{
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
-app.listen(process.env.PORT||4242,()=>console.log("NickVintage läuft auf http://localhost:"+(process.env.PORT||4242)));
+app.listen(process.env.PORT||4242,()=>console.log("N&D VINTAGE läuft auf http://localhost:"+(process.env.PORT||4242)));
