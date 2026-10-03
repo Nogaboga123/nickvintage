@@ -36,7 +36,7 @@ function renderProducts(){
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
  if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
  if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
- if(color)list=list.filter(p=>[p.color,p.colour,p.name].filter(Boolean).join(" ").toLowerCase().includes(color.toLowerCase()));
+ if(color)list=list.filter(p=>productColor(p)===color);
  if(price){const [min,max]=price.split("-").map(Number);list=list.filter(p=>Number(p.price)>=min&&Number(p.price)<=max)}
  if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":p.status!=="sold");
  const sort=document.getElementById("sort").value;
