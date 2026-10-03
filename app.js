@@ -90,6 +90,7 @@ function openCart(){document.getElementById("cart").classList.add("open");docume
 function closeCart(){document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("open")}
 function openProduct(id){
  id=Number(id);const p=products.find(x=>Number(x.id)===id);if(!p)return;
+ try{const seen=JSON.parse(localStorage.getItem("nd-vintage-recent")||"[]").map(Number).filter(x=>x!==id);localStorage.setItem("nd-vintage-recent",JSON.stringify([id,...seen].slice(0,6)))}catch{}
  location.href="/produkt.html?id="+encodeURIComponent(id);
  return;
  const seen=JSON.parse(localStorage.getItem("nd-vintage-recent")||"[]").filter(x=>x!==id);localStorage.setItem("nd-vintage-recent",JSON.stringify([id,...seen].slice(0,6)));
@@ -144,8 +145,7 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
 };
 /* Hamburger menu is handled by the dedicated mobile dropdown in index.html. */
 
-let end=Date.now()+1000*60*60*48+1000*60*17;
-function tick(){let d=Math.max(0,end-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);const t=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;document.getElementById("countdown").textContent=t;document.getElementById("topCountdown").textContent=t}setInterval(tick,1000);tick();
+/* Drop countdown is loaded from /api/public-settings in index.html. */
 function smallProductCard(p){return '<article class="product" data-rec-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgFor(p)?'<img loading="lazy" src="'+imgFor(p)+'" alt="">':'<div class="fake-photo">'+(p.code||"NV")+'</div>')+'<span class="badge">'+(p.status==="sold"?'SOLD':'NEW')+'</span></div><div class="product-info"><h3>'+p.name+'</h3><p>'+p.cat+' · '+p.size+' · '+p.condition+'</p><p class="price">'+euro(p.price)+'</p></div></article>'}
 function renderRecommendations(){const newest=[...products].sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,4),newBox=document.getElementById("newProducts");if(newBox)newBox.innerHTML=newest.map(smallProductCard).join("");let recent=[];try{recent=JSON.parse(localStorage.getItem("nd-vintage-recent")||"[]").map(Number)}catch{}const seen=recent.map(id=>products.find(p=>Number(p.id)===id)).filter(Boolean).slice(0,4),section=document.getElementById("recentSection"),box=document.getElementById("recentProducts");if(section&&box){section.style.display=seen.length?"block":"none";box.innerHTML=seen.map(smallProductCard).join("")}document.querySelectorAll("[data-rec-id]").forEach(x=>x.onclick=()=>openProduct(Number(x.dataset.recId)))}
 function productColor(p){const s=[p.color,p.colour,p.name].filter(Boolean).join(" ").toLowerCase();for(const [needle,label] of [["black","Schwarz"],["schwarz","Schwarz"],["grey","Grau"],["gray","Grau"],["grau","Grau"],["navy","Blau"],["blue","Blau"],["blau","Blau"],["beige","Beige"],["red","Rot"],["rot","Rot"],["white","Weiß"],["weiß","Weiß"],["green","Grün"],["grün","Grün"]])if(s.includes(needle))return label;return ""}
