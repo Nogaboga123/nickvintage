@@ -69,7 +69,7 @@ function updateFavUI(){
 function toggleFav(id){
  id=Number(id);if(!Number.isFinite(id))return;
  favorites=favorites.map(Number).filter(Number.isFinite);
- favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);
+ const adding=!favorites.includes(id);favorites=adding?favorites.concat(id):favorites.filter(x=>x!==id);if(adding)fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:id,type:"favorite"})}).catch(()=>{});
  favorites=[...new Set(favorites)];
  localStorage.setItem("nd-vintage-favorites-v2",JSON.stringify(favorites));
  renderProducts();updateFavUI();
