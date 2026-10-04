@@ -39,13 +39,13 @@ const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+(Number(p.oldPrice)>Number(p.price)?'<s style="font-weight:400;color:#777;margin-right:6px">'+euro(Number(p.oldPrice))+'</s>':'')+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
 
 function renderProducts(){
- let list=products.filter(p=>!p.hidden&&p.status!=="sold"&&(activeFilter==="Alle"||p.cat===activeFilter));
+ let list=products.filter(p=>!p.hidden&&(activeFilter==="Alle"||p.cat===activeFilter));
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
  if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
  if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
  if(color)list=list.filter(p=>productColor(p)===color);
  if(price){const [min,max]=price.split("-").map(Number);list=list.filter(p=>Number(p.price)>=min&&Number(p.price)<=max)}
- if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":p.status!=="sold");
+ if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":p.status!=="sold");else list=list.filter(p=>p.status!=="sold");
  const sort=document.getElementById("sort").value;
  if(sort==="low")list.sort((a,b)=>a.price-b.price);
  if(sort==="high")list.sort((a,b)=>b.price-a.price);
@@ -94,7 +94,7 @@ function updateCart(){
  el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  document.getElementById("subtotal").textContent=euro(total);
 }
-window.changeQty=(id,d)=>{const i=cart.find(x=>x.id===id);if(!i)return;i.qty+=d;if(i.qty<=0)cart=cart.filter(x=>x.id!==id);save();updateCart();renderCheckout();};
+window.changeQty=(id,d)=>{const i=cart.find(x=>x.id===id);if(!i)return;const p=products.find(x=>x.id===id);if(d>0&&p&&i.qty>=Math.max(0,Number(p.stock||0))){alert("Mehr Bestand ist für dieses Piece nicht verfügbar.");return}i.qty+=d;if(i.qty<=0)cart=cart.filter(x=>x.id!==id);save();updateCart();renderCheckout();};
 window.removeItem=id=>{cart=cart.filter(x=>x.id!==id);save();updateCart();renderCheckout();};
 function openCart(){document.getElementById("cart").classList.add("open");document.getElementById("overlay").classList.add("open")}
 function closeCart(){document.getElementById("cart").classList.remove("open");document.getElementById("overlay").classList.remove("open")}
@@ -108,7 +108,7 @@ function openProduct(id){
  document.getElementById("productModal").classList.add("open");
 }
 function closeProduct(){document.getElementById("productModal").classList.remove("open")}
-window.addToCart=id=>{const p=products.find(x=>x.id===id);if(!p||p.status==="sold"){alert("Dieses Piece ist ausverkauft.");return}const i=cart.find(x=>x.id===id);if(i)i.qty++;else cart.push({id,qty:1});save();updateCart();fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:id,type:"cart"})}).catch(()=>{})};
+window.addToCart=id=>{const p=products.find(x=>x.id===id);if(!p||p.status==="sold"||Number(p.stock||0)<=0){alert("Dieses Piece ist ausverkauft.");return}const i=cart.find(x=>x.id===id);if(i&&i.qty>=Number(p.stock||0)){alert("Mehr Bestand ist für dieses Piece nicht verfügbar.");return}if(i)i.qty++;else cart.push({id,qty:1});save();updateCart();fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:id,type:"cart"})}).catch(()=>{})};
 function renderCheckout(){
  const items=document.getElementById("checkoutItems");
  cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
@@ -146,6 +146,8 @@ document.querySelectorAll("[data-cat]").forEach(a=>a.onclick=()=>{activeFilter=a
 document.getElementById("earlyForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("earlyMsg"),email=document.getElementById("email").value.trim();out.textContent="Wird eingetragen…";try{const r=await fetch("/api/drop-alert",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.textContent="✓ Du bist beim Drop-Alert dabei.";e.target.reset()}catch(err){out.textContent=err.message}};
 document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
+ cart=cart.filter(x=>products.some(p=>Number(p.id)===Number(x.id)&&p.status!=="sold"&&Number(p.stock||0)>=Number(x.qty||1)));save();
+ if(!cart.length){alert("Dein Warenkorb enthält keine verfügbaren Artikel mehr.");closeCheckout();updateCart();return}
  const btn=e.target.querySelector("button"); btn.disabled=true; btn.textContent="CHECKOUT WIRD GELADEN…";
  try{
   fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:0,type:"checkout"})}).catch(()=>{});
@@ -155,7 +157,7 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
   if(data.url){location.href=data.url;return;}
   throw new Error("Keine Checkout-URL erhalten.");
  }catch(err){
-  alert(err.message+"\n\nFür die lokale Demo kannst du die Stripe-Konfiguration aus .env.example einrichten.");
+  alert(err.message);
  }finally{btn.disabled=false;btn.textContent="BESTELLUNG PRÜFEN";}
 };
 /* Hamburger menu is handled by the dedicated mobile dropdown in index.html. */
