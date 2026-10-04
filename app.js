@@ -108,7 +108,7 @@ function openProduct(id){
  document.getElementById("productModal").classList.add("open");
 }
 function closeProduct(){document.getElementById("productModal").classList.remove("open")}
-window.addToCart=id=>{const p=products.find(x=>x.id===id);if(!p||p.status==="sold"){alert("Dieses Piece ist ausverkauft.");return}const i=cart.find(x=>x.id===id);if(i)i.qty++;else cart.push({id,qty:1});save();updateCart()};
+window.addToCart=id=>{const p=products.find(x=>x.id===id);if(!p||p.status==="sold"){alert("Dieses Piece ist ausverkauft.");return}const i=cart.find(x=>x.id===id);if(i)i.qty++;else cart.push({id,qty:1});save();updateCart();fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:id,type:"cart"})}).catch(()=>{})};
 function renderCheckout(){
  const items=document.getElementById("checkoutItems");
  cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
@@ -148,6 +148,7 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
  const btn=e.target.querySelector("button"); btn.disabled=true; btn.textContent="CHECKOUT WIRD GELADEN…";
  try{
+  fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:0,type:"checkout"})}).catch(()=>{});
   const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim(),discountCode,shippingCountry:document.getElementById("shippingCountry")?.value||"DE"})});
   const data=await r.json();
   if(!r.ok) throw new Error(data.error||"Checkout-Fehler");
