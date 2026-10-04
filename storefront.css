@@ -1,0 +1,115 @@
+
+/* N&D Vintage: shared customer-facing layout, loaded after page styles. */
+body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:var(--nd-paper);color:#20251f;font-family:Inter,Arial,sans-serif}
+.nd-store .site-header{background:#fff;border-bottom:1px solid var(--nd-line);height:76px;padding:0 max(20px,calc((100vw - 1320px)/2));box-shadow:0 2px 12px #00000004;backdrop-filter:none}
+.nd-store .logo{letter-spacing:-.04em;font-size:21px;color:var(--nd-ink)}
+.nd-store .nav{gap:24px;font-size:11px;letter-spacing:.04em}
+.nd-store .nav a{padding:12px 0}
+.nd-store .site-header .shop-back{border:0;border-radius:6px;background:var(--nd-ink);color:white;padding:12px 16px}
+.nd-store .announcement{background:var(--nd-ink);font-size:10px;letter-spacing:.06em;line-height:1.6}
+.nd-store .kv-hero{height:420px;max-height:none;min-height:0;max-width:1320px;margin:24px auto;border-radius:12px;overflow:hidden;background:var(--nd-ink)}
+.nd-store .kv-hero-bg{opacity:.42;background-image:linear-gradient(90deg,#243d33 5%,#243d3380 70%),url("https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&fm=jpg&q=88&w=1800")}
+.nd-store .kv-hero-content{padding:48px 5vw;justify-content:center}
+.nd-store .kv-hero-content h1{font-size:clamp(48px,6vw,84px);line-height:1.02;letter-spacing:-.055em;margin-bottom:20px}
+.nd-store .kv-hero-content span{font-size:14px;line-height:1.6}
+.nd-store .kv-shop-btn{border-radius:6px;min-height:46px;letter-spacing:.03em}
+.nd-store .category-section,.nd-store .shop-section,.nd-store .recommend-section,.nd-store .drop-section,.nd-store .faq,.nd-store .trust{max-width:1320px;margin:auto;padding:42px 24px;background:transparent}
+.nd-store .category-heading h2{font-size:28px}
+.nd-store .category-section .kv-quick{background:transparent;border:0;gap:10px}
+.nd-store .category-section .kv-quick a{border:1px solid var(--nd-line);border-radius:8px;background:#fff;min-height:66px;font-size:12px;padding:18px}
+.nd-store .category-section .kv-quick a:hover{background:var(--nd-ink);color:white}
+.nd-store .section-head h2{font-size:clamp(30px,4vw,48px);line-height:1.1;letter-spacing:-.04em}
+.nd-store .section-head{align-items:center;margin-bottom:26px}
+.nd-store .eyebrow{color:#687469;letter-spacing:.12em;font-size:10px;margin-bottom:10px}
+.nd-store .filter,.nd-store .collection-nav a{background:#fff;border:1px solid var(--nd-line);border-radius:6px;font-size:11px;padding:12px 15px;min-height:42px}
+.nd-store .filter.active,.nd-store .collection-nav a.on{background:var(--nd-ink);color:#fff;border-color:var(--nd-ink)}
+.nd-store .shop-controls{background:#fff;padding:16px;border:1px solid var(--nd-line);border-radius:10px;margin-bottom:24px}
+.nd-store select,.nd-store .filter-toggle,.nd-store .advanced-filters button{border-radius:6px;background:#fff;border-color:var(--nd-line)}
+.nd-store .products,.nd-store .collection-grid,.nd-store .drop-grid,.nd-store .archive-grid{gap:24px 18px}
+.nd-store .product,.nd-store .collection-card,.nd-store .drop-card,.nd-store .archive-card{background:#fff;border:1px solid var(--nd-line);border-radius:8px;overflow:hidden}
+.nd-store .product-info{padding:15px}
+.nd-store .collection-card h3,.nd-store .drop-card h3,.nd-store .archive-card h3{font-size:13px;line-height:1.5;margin:14px 14px 6px}
+.nd-store .collection-card p{font-size:11px;line-height:1.5;margin:0 14px}
+.nd-store .collection-card b,.nd-store .drop-card b,.nd-store .archive-card span{display:block;font-size:13px;margin:10px 14px 16px}
+.nd-store .product-info h3{font-size:13px;line-height:1.5}
+.nd-store .product-info p{font-size:11px;line-height:1.5}
+.nd-store .badge{border-radius:4px}
+.nd-store .collection,.nd-store .archive,.nd-store .search-page,.nd-store .favpage,.nd-store .pwrap{max-width:1320px;margin:auto;padding:42px 24px 70px;background:transparent;min-height:70vh}
+.nd-store .collection h1,.nd-store .archive h1,.nd-store .search-head h1,.nd-store .favtop h1{font-size:clamp(36px,5vw,64px);line-height:1.08;letter-spacing:-.045em;margin:10px 0 22px}
+.nd-store .page-description{font-size:14px;line-height:1.7;color:#687469;max-width:620px;margin:0 0 28px}
+.nd-store .collection-nav{flex-wrap:wrap;overflow:visible;gap:8px;margin-bottom:28px}
+.nd-store .drop-page{max-width:1272px;margin:24px auto 0;background:var(--nd-ink);border-radius:12px;padding:42px;color:#fff}
+.nd-store .drop-page .eyebrow{color:#d6dfd7}
+.nd-store .drop-page h1{font-size:clamp(44px,7vw,82px);line-height:1.05;letter-spacing:-.045em;margin:12px 0 24px}
+.nd-store .drop-time{font-size:clamp(30px,5vw,54px);letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.nd-store .drop-products{max-width:1320px;margin:auto;background:transparent;padding:42px 24px 70px}
+.nd-store .btn-dark,.nd-store .send,.nd-store .search-form button{background:var(--nd-ink);border-color:var(--nd-ink);color:#fff;border-radius:6px}
+.nd-store .btn-light{border-radius:6px}
+.nd-store .drop-box{border-radius:10px;background:var(--nd-ink);padding:30px;gap:30px}
+.nd-store .drop-box h3{font-size:36px;line-height:1.1}
+.nd-store .benefit-strip{background:#e9ede6;border-color:var(--nd-line)}
+.nd-store .about{max-width:1272px;margin:30px auto;border-radius:12px;overflow:hidden;background:var(--nd-ink)}
+.nd-store .about-image{min-height:360px}
+.nd-store .about-copy{padding:42px}
+.nd-store .about-copy h2{font-size:42px;line-height:1.06}
+.nd-store .trust>div:first-child h2{font-size:42px;line-height:1.05;margin-bottom:30px}
+.nd-store .faq summary{font-size:14px;padding:22px 0}
+.nd-store .pdetail{gap:36px;grid-template-columns:1.1fr .9fr}
+.nd-store .gallery-main,.nd-store .thumbs button{border-radius:8px}
+.nd-store .pcopy{background:#fff;border:1px solid var(--nd-line);border-radius:10px;padding:28px;height:max-content}
+.nd-store .pcopy h1{font-size:clamp(28px,3vw,42px);line-height:1.15;margin:12px 0}
+.nd-store .heart,.nd-store .product-assurance span{border-radius:6px}
+.nd-store .ret{max-width:800px;margin:38px auto;padding:24px}
+.nd-store .ret h1{font-size:clamp(34px,5vw,56px);line-height:1.1}
+.nd-store .return-box{background:#fff;border-radius:10px;padding:28px}
+.nd-store .return-box input,.nd-store .return-box textarea{border-radius:6px}
+.nd-store .legal-page{max-width:860px;margin:38px auto;padding:32px;background:#fff;border:1px solid var(--nd-line);border-radius:10px;line-height:1.8}
+.nd-store .legal-page h1{font-size:32px;line-height:1.2}
+.nd-store .success-card{background:var(--nd-ink);border-radius:12px}
+.nd-store .success h1{font-size:42px;line-height:1.1}
+.nd-store .store-footer{padding:28px 24px;border-top:1px solid var(--nd-line);background:#fff;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;font-size:11px}
+.nd-store .store-footer nav{display:flex;flex-wrap:wrap;gap:18px}
+.nd-store .footer-main{background:var(--nd-ink)}
+.nd-store .footer-bottom{background:var(--nd-ink);color:#b9c8bd}
+.nd-store .mobile-bottom{background:var(--nd-ink)}
+.nd-store .mobile-bottom a,.nd-store .mobile-bottom button{background:var(--nd-ink);border-color:#ffffff25;font-size:9px}
+@media(max-width:900px){
+ .nd-store .site-header:not(:has(.header-actions)){height:auto;min-height:72px;padding:14px 20px;display:grid;grid-template-columns:1fr auto;gap:12px}
+ .nd-store .site-header:not(:has(.header-actions)) .nav{display:flex;position:static;grid-row:2;grid-column:1/-1;flex-direction:row;overflow:auto;gap:22px;background:transparent;border:0;padding:0;font-size:10px}
+ .nd-store .site-header:not(:has(.header-actions)) .nav a{border:0;padding:8px 0;white-space:nowrap}
+ .nd-store .pdetail{grid-template-columns:1fr}
+ .nd-store .drop-page,.nd-store .about,.nd-store .kv-hero{margin-left:16px;margin-right:16px}
+}
+@media(max-width:680px){
+ .nd-store .site-header{height:66px;padding:0 16px}
+ .nd-store .logo{font-size:18px}
+ .nd-store .kv-hero{height:350px;margin:16px;min-height:0}
+ .nd-store .kv-hero-content{padding:28px 22px}
+ .nd-store .kv-hero-content h1{font-size:48px}
+ .nd-store .kv-hero-content span{font-size:12px;margin-bottom:18px}
+ .nd-store .category-section,.nd-store .shop-section,.nd-store .recommend-section,.nd-store .drop-section,.nd-store .faq,.nd-store .trust{padding:28px 16px}
+ .nd-store .category-heading h2{font-size:22px}
+ .nd-store .section-head h2{font-size:32px}
+ .nd-store .shop-controls{padding:12px}
+ .nd-store .product-info{padding:10px}
+ .nd-store .product-name-row{flex-wrap:wrap;gap:5px}
+ .nd-store .products,.nd-store .collection-grid,.nd-store .drop-grid,.nd-store .archive-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 10px}
+ .nd-store .collection,.nd-store .archive,.nd-store .search-page,.nd-store .favpage,.nd-store .pwrap{padding:28px 16px 65px}
+ .nd-store .collection h1,.nd-store .archive h1,.nd-store .search-head h1,.nd-store .favtop h1{font-size:38px}
+ .nd-store .favtop{align-items:flex-start;flex-wrap:wrap;gap:12px}
+ .nd-store .drop-page{padding:28px 22px}
+ .nd-store .drop-products{padding:28px 16px 60px}
+ .nd-store .pcopy{padding:22px 18px}
+ .nd-store .pcopy h1{font-size:30px}
+ .nd-store .about-copy{padding:28px 22px}
+ .nd-store .about-copy h2{font-size:32px}
+ .nd-store .about-image{min-height:260px}
+ .nd-store .drop-box{padding:22px}
+ .nd-store .drop-box h3{font-size:28px}
+ .nd-store .ret{margin:16px auto;padding:16px}
+ .nd-store .return-box{padding:20px}
+ .nd-store .legal-page{margin:20px 16px;padding:22px}
+ .nd-store .success-card{padding:38px 22px}
+ .nd-store .success h1{font-size:32px}
+ .nd-store .store-footer{padding-bottom:30px}
+}
