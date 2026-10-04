@@ -19,6 +19,7 @@ const save=()=>{localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));dis
 function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+(Number(p.oldPrice)>Number(p.price)?'<s style="font-weight:400;color:#777;margin-right:6px">'+euro(Number(p.oldPrice))+'</s>':'')+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
 
 function renderProducts(){
+ renderActiveFilters();
  if(!productsLoaded){document.getElementById("productTotal").textContent="";document.getElementById("products").innerHTML='<div class="empty" role="status">Pieces werden geladen…</div>';return;}
  let list=products.filter(p=>!p.hidden&&(activeFilter==="Alle"||p.cat===activeFilter));
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
@@ -72,7 +73,7 @@ function updateCart(){
  if(progressText)progressText.textContent=remaining>0?"Noch "+euro(remaining)+" bis kostenloser Versand":"✓ Kostenloser Versand erreicht";
  if(progressBar)progressBar.style.width=pct+"%";
  const shipNote=document.getElementById("cartShippingNote");if(shipNote)shipNote.textContent=remaining<=0?"Kostenloser Versand für diesen Warenkorb.":"Kostenloser Versand ab "+euro(goal)+".";
- if(!cart.length){el.innerHTML='<div class="empty"><b>Dein Warenkorb ist leer.</b><br><span>Entdecke deine nächsten Vintage Pieces.</span></div>';document.getElementById("subtotal").textContent=euro(0);return;}
+ if(!cart.length){el.innerHTML='<div class="empty-state cart-empty"><span class="empty-symbol" aria-hidden="true">↗</span><h2>Dein nächstes Piece wartet</h2><p>Dein Warenkorb ist noch leer. Entdecke die Auswahl und füge dein Lieblingsstück auf der Produktseite hinzu.</p><button type="button" class="btn btn-dark" id="emptyCartExplore">Pieces entdecken</button></div>';document.getElementById("emptyCartExplore").onclick=()=>{closeCart();document.getElementById("shop").scrollIntoView({behavior:"smooth"});};document.getElementById("subtotal").textContent=euro(0);return;}
  el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  document.getElementById("subtotal").textContent=euro(total);
 }
@@ -175,3 +176,16 @@ fetch("/api/public-settings").then(r=>{if(!r.ok)throw Error();return r.json()}).
 
 if(location.hash==="#cart")openCart();
 addEventListener("hashchange",()=>{if(location.hash==="#cart")openCart()});
+
+function renderActiveFilters(){
+ const anchor=document.getElementById("filterPanel");if(!anchor)return;
+ let box=document.getElementById("activeFilterChips");if(!box){box=document.createElement("div");box.id="activeFilterChips";box.className="active-filter-chips";box.setAttribute("aria-label","Ausgewählte Filter");anchor.after(box)}
+ box.replaceChildren();
+ const add=(label,remove)=>{const b=document.createElement("button");b.type="button";b.className="filter-chip";b.textContent=label+" ×";b.setAttribute("aria-label",label+" entfernen");b.onclick=()=>{remove();renderProducts()};box.appendChild(b)};
+ const syncCategories=()=>document.querySelectorAll(".filter").forEach(b=>b.classList.toggle("active",b.dataset.filter===activeFilter));
+ if(activeFilter!=="Alle")add("Kategorie: "+activeFilter,()=>{activeFilter="Alle";syncCategories()});
+ const labels={brandFilter:"Marke",sizeFilter:"Größe",colorFilter:"Farbe",priceFilter:"Preis",availabilityFilter:"Verfügbarkeit"};
+ Object.entries(labels).forEach(([id,label])=>{const select=document.getElementById(id);if(select?.value)add(label+": "+select.options[select.selectedIndex].text,()=>{select.value=""})});
+ if(box.childElementCount){const reset=document.createElement("button");reset.type="button";reset.className="filter-clear";reset.textContent="Alle entfernen";reset.onclick=()=>{document.getElementById("resetFilters").click();syncCategories()};box.appendChild(reset)}
+ box.hidden=!box.childElementCount;
+}
