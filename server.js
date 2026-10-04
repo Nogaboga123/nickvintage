@@ -198,6 +198,7 @@ const upload=multer({storage:multer.diskStorage({
 
 app.post("/api/analytics",(req,res)=>{const id=Number(req.body?.productId),type=String(req.body?.type||"");if(!Number.isFinite(id)||!["view","favorite"].includes(type))return res.status(400).json({error:"Ungültige Analytics-Daten"});const a=readAnalytics(),k=String(id);a[k]=a[k]||{views:0,favorites:0};a[k][type==="view"?"views":"favorites"]++;writeAnalytics(a);res.json({ok:true})});
 app.get("/api/admin/analytics",auth,(_req,res)=>res.json(readAnalytics()));
+app.get("/api/trending",(_req,res)=>{const a=readAnalytics(),ps=readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now()));res.json(ps.map(p=>({id:p.id,views:Number(a[p.id]?.views||0),favorites:Number(a[p.id]?.favorites||0),score:Number(a[p.id]?.views||0)+Number(a[p.id]?.favorites||0)*2})).sort((x,y)=>y.score-x.score).slice(0,6))});
 app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts().filter(p=>!p.hidden&&(!p.publishAt||new Date(p.publishAt).getTime()<=now)))});
 app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
