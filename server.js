@@ -47,7 +47,7 @@ const productDefaults={
 const {Pool}=pg;
 const pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}}):null;
 const store={};
-const persist=(key,value)=>{store[key]=value;if(pool)pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]).catch(e=>console.error("DB speichern "+key+":",e.message));};
+const persist=async(key,value)=>{store[key]=value;if(pool)await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]);};
 const localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};
 const readProducts=()=>{const saved=store.products||localJson(dbFile,[]);const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
@@ -77,7 +77,7 @@ const writeSubscribers=x=>persist("subscribers",x);
 const readAnalytics=()=>store.analytics||localJson(analyticsFile,{});
 const writeAnalytics=x=>persist("analytics",x);
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
-const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
+const adminPassword=process.env.ADMIN_PASSWORD||"";
 const sessions=new Map();
 const earlyTokens=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
@@ -96,10 +96,10 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
     const parsed=String(s.metadata?.items||"").split(",").filter(Boolean).map(v=>{const [pid,qty]=v.split("x").map(Number);return {id:pid,qty}});
     const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,purchasePrice:Number(p.purchasePrice||0),qty:x.qty}:null}).filter(Boolean);
     for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
-    writeProducts(db);
-    const aa=readAnalytics();for(const x of parsed){const k=String(x.id);aa[k]=aa[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};aa[k].purchases=(aa[k].purchases||0)+Number(x.qty||1);aa[k].events=Array.isArray(aa[k].events)?aa[k].events:[];aa[k].events.push({type:"purchase",at:new Date().toISOString()})}writeAnalytics(aa);
+    await writeProducts(db);
+    const aa=readAnalytics();for(const x of parsed){const k=String(x.id);aa[k]=aa[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};aa[k].purchases=(aa[k].purchases||0)+Number(x.qty||1);aa[k].events=Array.isArray(aa[k].events)?aa[k].events:[];aa[k].events.push({type:"purchase",at:new Date().toISOString()})}await writeAnalytics(aa);
     orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",carrier:"",test:s.livemode===false,createdAt:new Date().toISOString()});
-    writeOrders(orders);
+    await writeOrders(orders);
    }
   }
   res.json({received:true});
@@ -230,6 +230,7 @@ app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
   const password=String(req.body?.password||"");
+  if(!adminPasswordHash&&!adminPassword)return res.status(503).json({ok:false,error:"Admin-Passwort ist auf dem Server nicht konfiguriert."});
   const ok=adminPasswordHash ? await bcrypt.compare(password,adminPasswordHash) : password===adminPassword;
   if(!ok)return res.status(401).json({ok:false,error:"Falsches Admin-Passwort"});
   const token=crypto.randomBytes(32).toString("hex");
