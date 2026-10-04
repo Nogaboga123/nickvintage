@@ -84,12 +84,22 @@
       </div>
     </section>
 
+    <section class="categories shop-categories" id="categories">
+      <div class="section-head"><div><p class="eyebrow">SHOP BY CATEGORY</p><h2>KATEGORIEN</h2></div></div>
+      <div class="category-grid">
+        <a href="#shop" data-cat="Tracksuits"><span>01</span><b>TRACKSUITS</b><i>→</i></a>
+        <a href="#shop" data-cat="Trackpants"><span>02</span><b>TRACKPANTS</b><i>→</i></a>
+        <a href="#shop" data-cat="Jacken"><span>03</span><b>JACKEN</b><i>→</i></a>
+        <a href="#shop" data-cat="Hoodies"><span>04</span><b>HOODIES</b><i>→</i></a>
+      </div>
+    </section>
+
     <section class="shop-section" id="shop">
       <div class="section-head">
         <div><p class="eyebrow">CURATED FOR YOU</p><h2>SHOP</h2></div>
         <span id="productTotal"></span>
       </div>
-      <div class="shop-controls">
+      <div class="shop-controls"><button type="button" class="filter-toggle" id="filterToggle">FILTER & SORTIERUNG <span>+</span></button>
         <div class="filters" id="filters">
           <button class="filter active" data-filter="Alle">Alle</button>
           <button class="filter" data-filter="Jacken">Jacken</button>
@@ -107,14 +117,14 @@
           <option value="high">Preis absteigend</option>
         </select>
       </div>
-      <div class="advanced-filters" id="advancedFilters">
+      <div class="filter-panel" id="filterPanel"><div class="advanced-filters" id="advancedFilters">
         <select id="brandFilter"><option value="">Alle Marken</option></select>
         <select id="sizeFilter"><option value="">Alle Größen</option></select>
         <select id="colorFilter"><option value="">Alle Farben</option></select>
         <select id="priceFilter"><option value="">Jeder Preis</option><option value="0-70">Bis 70 €</option><option value="70-100">70–100 €</option><option value="100-99999">Ab 100 €</option></select>
         <select id="availabilityFilter"><option value="">Alle Artikel</option><option value="available">Nur verfügbar</option><option value="sold">Ausverkauft</option></select>
         <button type="button" id="resetFilters">FILTER ZURÜCKSETZEN</button>
-      </div>
+      </div></div>
       <div class="products" id="products"></div>
     </section>
 
@@ -132,16 +142,6 @@
     <section class="drop-section" id="order-status">
       <div class="section-head"><div><p class="eyebrow">DEINE BESTELLUNG</p><h2>STATUS</h2></div></div>
       <div class="drop-box"><form id="statusForm" class="early-form"><label>BESTELLUNG VERFOLGEN</label><div><input id="statusOrder" required placeholder="Bestellnummer"><input id="statusEmail" type="email" required placeholder="E-Mail"><button>PRÜFEN</button></div><small id="statusResult">Bestellnummer und die beim Kauf verwendete E-Mail eingeben.</small></form></div>
-    </section>
-
-    <section class="categories" id="categories">
-      <div class="section-head"><div><p class="eyebrow">EXPLORE</p><h2>KATEGORIEN</h2></div></div>
-      <div class="category-grid">
-        <a href="#shop" data-cat="Tracksuits"><span>01</span><b>TRACKSUITS</b><i>→</i></a>
-        <a href="#shop" data-cat="Jacken"><span>02</span><b>JACKEN</b><i>→</i></a>
-        <a href="#shop" data-cat="Jeans"><span>03</span><b>JEANS</b><i>→</i></a>
-        <a href="#shop" data-cat="Hoodies"><span>04</span><b>HOODIES</b><i>→</i></a>
-      </div>
     </section>
 
     <section class="about" id="about">
