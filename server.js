@@ -247,12 +247,12 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    const checkoutImage=p.image?(p.image.startsWith("http://")||p.image.startsWith("https://")?p.image:publicBaseUrl+p.image):"";
    line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:checkoutImage?[checkoutImage]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});subtotal+=Number(p.price)*qty;
   }
-  const cfg=readSettings(),discount=cfg.discount||{},code=String(req.body.discountCode||"").trim().toUpperCase();if(code&&discount.active&&code===discount.code&&discount.percent>0){line_items.push({price_data:{currency:"eur",product_data:{name:"Rabatt "+discount.code},unit_amount:-Math.round(subtotal*discount.percent)},quantity:1})}const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
+  const cfg=readSettings(),discount=cfg.discount||{},code=String(req.body.discountCode||"").trim().toUpperCase();if(code&&discount.active&&code===discount.code&&discount.percent>0){const factor=Math.max(0,1-Number(discount.percent)/100);for(const li of line_items)li.price_data.unit_amount=Math.max(1,Math.round(li.price_data.unit_amount*factor))}const country=["DE","AT","CH"].includes(String(req.body.shippingCountry||"").toUpperCase())?String(req.body.shippingCountry).toUpperCase():"DE";const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
   const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    line_items,
-   shipping_address_collection:{allowed_countries:["DE","AT","CH"]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.DE||4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser Versand":"Standardversand"}}],
+   shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser Versand":"Standardversand "+country}}],
    customer_email:customerEmail||undefined,
    metadata:{items:itemMeta},
    success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
