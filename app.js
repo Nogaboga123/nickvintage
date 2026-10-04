@@ -117,6 +117,7 @@ function renderCheckout(){
  items.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="summary-line"><span>${i.qty}× ${p.name}</span><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  const subtotal=cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0),country=document.getElementById("shippingCountry")?.value||"DE",freeFrom=Math.max(0,Number(publicSettings.shipping?.freeFrom??100)),shipping=subtotal>=freeFrom?0:Math.max(0,Number(publicSettings.shipping?.[country]??publicSettings.shipping?.DE??4.99));
  items.innerHTML+=`<div class="summary-line"><span>Versand (${country})</span><b>${shipping===0?"Kostenlos":euro(shipping)}</b></div>`;
+ if(discountCode)items.innerHTML+=`<p class="payment-note">Rabattcode <b>${discountCode}</b> wird im nächsten Schritt geprüft und abgezogen.</p>`;
  document.getElementById("checkoutTotal").textContent=euro(subtotal+shipping);
 }
 function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");return}renderCheckout();document.getElementById("checkoutModal").classList.add("open");closeCart()}
