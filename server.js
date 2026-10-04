@@ -138,7 +138,7 @@ app.get("/produkt.html",(req,res,next)=>{
   const availability=(p.status==="sold"||Number(p.stock||0)<=0)?"https://schema.org/OutOfStock":"https://schema.org/InStock";
   const productJson=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:String(p.name||"Vintage Piece"),description:desc,image:[image],sku:"ND-"+id,brand:{"@type":"Brand",name:String(p.code||p.tag||"N&D VINTAGE")},itemCondition:"https://schema.org/UsedCondition",offers:{"@type":"Offer",url:pageUrl,priceCurrency:"EUR",price:price.toFixed(2),availability,itemCondition:"https://schema.org/UsedCondition",seller:{"@type":"Organization",name:"N&D VINTAGE"}}}).replace(/</g,"\\u003c");
   const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta property="product:price:amount" content="'+escMeta(price.toFixed(2))+'"><meta property="product:price:currency" content="EUR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'"><script type="application/ld+json">'+productJson+'<\\/script>';
-  res.type("html").send(file.replace(/<title>[^<]*<\\/title>/i,"").replace("</head>",meta+"</head>"));
+  res.type("html").send(file.replace("<title>Produkt — N&D VINTAGE</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
 app.get("/kategorie.html",(req,res,next)=>{
@@ -152,7 +152,7 @@ app.get("/kategorie.html",(req,res,next)=>{
   const title=cat+" Vintage kaufen | N&D VINTAGE";
   const desc="Entdecke ausgewählte Vintage "+cat+" bei N&D VINTAGE. Kuratierte Streetwear, Einzelstücke, transparente Zustandsangaben und Maße.";
   const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="website"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+base+'/nd-vintage-social-share.jpg"><meta name="twitter:card" content="summary_large_image">';
-  res.type("html").send(file.replace(/<title>[^<]*<\\/title>/i,"").replace("</head>",meta+"</head>"));
+  res.type("html").send(file.replace("<title>Produkt — N&D VINTAGE</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
 app.use(express.static(__dirname,{index:false}));
