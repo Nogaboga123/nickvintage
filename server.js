@@ -79,6 +79,7 @@ const writeAnalytics=x=>persist("analytics",x);
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"";
 const sessions=new Map();
+const loginAttempts=new Map();
 const earlyTokens=new Map();
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const stripeWebhookSecret=process.env.STRIPE_WEBHOOK_SECRET||"";
@@ -105,6 +106,8 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
   res.json({received:true});
  }catch(e){console.error("Webhook:",e.message);res.status(400).send("Webhook error")}
 });
+app.disable("x-powered-by");
+app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Referrer-Policy","strict-origin-when-cross-origin");res.setHeader("X-Frame-Options","DENY");res.setHeader("Permissions-Policy","camera=(), microphone=(), geolocation=()");next()});
 app.use(express.json({limit:"2mb"})); app.use(cookieParser());
 app.use((req,res,next)=>{
  const protectedPage=req.path==="/" || req.path==="/index.html";
@@ -219,7 +222,7 @@ app.put("/api/admin/returns/:id",auth,(req,res)=>{
 const upload=multer({storage:multer.diskStorage({
  destination:uploadDir,
  filename:(_req,file,cb)=>cb(null,Date.now()+"-"+crypto.randomBytes(5).toString("hex")+path.extname(file.originalname).toLowerCase())
-}),limits:{fileSize:8*1024*1024},fileFilter:(_r,f,cb)=>cb(null,/^image\/(jpeg|png|webp|gif)$/.test(f.mimetype))});
+}),limits:{fileSize:5*1024*1024,files:1},fileFilter:(_r,f,cb)=>{const ok=/^image\/(jpeg|png|webp)$/.test(f.mimetype)&&/\.(jpe?g|png|webp)$/i.test(f.originalname);cb(ok?null:new Error("Nur JPG, PNG oder WEBP erlaubt"),ok)}});
 
 
 app.post("/api/analytics",(req,res)=>{const id=Number(req.body?.productId),type=String(req.body?.type||"");if(!Number.isFinite(id)||!["view","favorite","cart","checkout","purchase"].includes(type))return res.status(400).json({error:"Ungültige Analytics-Daten"});const a=readAnalytics(),k=String(id);a[k]=a[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};if(type==="view")a[k].views++;else if(type==="favorite")a[k].favorites++;else if(type==="cart")a[k].carts=(a[k].carts||0)+1;else if(type==="checkout")a[k].checkouts=(a[k].checkouts||0)+1;else if(type==="purchase")a[k].purchases=(a[k].purchases||0)+1;a[k].events=Array.isArray(a[k].events)?a[k].events:[];a[k].events.push({type,at:new Date().toISOString()});if(a[k].events.length>1000)a[k].events=a[k].events.slice(-1000);writeAnalytics(a);res.json({ok:true})});
@@ -229,20 +232,24 @@ app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts(
 app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
  try{
+  const key=String(req.ip||req.socket?.remoteAddress||"unknown"),now=Date.now(),state=loginAttempts.get(key)||{count:0,reset:now+15*60*1000};
+  if(now>state.reset){state.count=0;state.reset=now+15*60*1000}
+  if(state.count>=8)return res.status(429).json({ok:false,error:"Zu viele Login-Versuche. Bitte später erneut versuchen."});
   const password=String(req.body?.password||"");
   if(!adminPasswordHash&&!adminPassword)return res.status(503).json({ok:false,error:"Admin-Passwort ist auf dem Server nicht konfiguriert."});
   const ok=adminPasswordHash ? await bcrypt.compare(password,adminPasswordHash) : password===adminPassword;
-  if(!ok)return res.status(401).json({ok:false,error:"Falsches Admin-Passwort"});
+  if(!ok){state.count++;loginAttempts.set(key,state);return res.status(401).json({ok:false,error:"Falsches Admin-Passwort"})}
+  loginAttempts.delete(key);
   const token=crypto.randomBytes(32).toString("hex");
   sessions.set(token,Date.now()+12*60*60*1000);
-  res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",maxAge:12*60*60*1000,path:"/"});
+  res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api/admin"});
   res.json({ok:true});
  }catch(e){res.status(500).json({error:"Login-Fehler"})}
 });
 app.post("/api/admin/logout",(req,res)=>{
  const token=req.cookies?.nv_admin;
  if(token)sessions.delete(token);
- res.clearCookie("nv_admin",{path:"/"});
+ res.clearCookie("nv_admin",{path:"/api/admin",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
  res.json({ok:true});
 });
 app.post("/api/admin/products",auth,(req,res)=>{
