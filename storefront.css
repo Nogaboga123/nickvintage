@@ -129,3 +129,21 @@ body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:v
 .nd-store .product-facts dd{font-size:13px;font-weight:700;margin:0;line-height:1.5;overflow-wrap:anywhere}
 .nd-store .product-note{font-size:12px;line-height:1.6;color:#687469}
 @media(max-width:680px){.nd-store .category-filters{grid-template-columns:1fr 1fr;padding:14px;gap:12px}.nd-store .category-filters .btn{padding:12px;font-size:9px;min-height:44px}.nd-store .empty-state{padding:30px 18px}}
+
+.nd-store .profile-page{max-width:1200px;margin:auto;padding:42px 24px 70px}
+.nd-store .profile-page h1{font-size:clamp(36px,5vw,58px);line-height:1.1;letter-spacing:-.04em;margin:10px 0 20px}
+.nd-store .profile-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:24px}
+.nd-store .profile-panel{padding:28px;background:#fff;border:1px solid var(--nd-line);border-radius:10px;height:max-content}
+.nd-store .profile-panel h2{font-size:21px;letter-spacing:-.02em;margin:0 0 18px}
+.nd-store .profile-local-note,.nd-store .profile-shortcuts p{font-size:12px;line-height:1.7;color:#687469}
+.nd-store .profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}
+.nd-store .profile-fields label{display:grid;gap:8px;font-size:12px;font-weight:700}
+.nd-store .profile-wide{grid-column:1/-1}
+.nd-store .profile-fields input,.nd-store .profile-fields select{width:100%;min-width:0;min-height:46px;border:1px solid var(--nd-line);border-radius:6px;background:#fff;padding:12px;font-size:16px}
+.nd-store .profile-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.nd-store #profileMessage{font-size:13px;line-height:1.6;margin-bottom:0;color:var(--nd-ink)}
+.nd-store .profile-shortcuts>a{display:flex;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--nd-line);font-size:13px;font-weight:700;gap:12px}
+.nd-store .profile-mobile-link{display:none}
+.nd-store .mobile-bottom.with-profile{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:900px){.nd-store .site-header:not(:has(.header-actions)) .profile-mobile-link{display:none}.nd-store .profile-mobile-link{display:block;font-size:11px;font-weight:800;grid-row:2}}
+@media(max-width:680px){.nd-store .profile-page{padding:28px 16px 65px}.nd-store .profile-layout{grid-template-columns:1fr}.nd-store .profile-panel{padding:22px 18px}.nd-store .profile-fields{gap:14px}.nd-store .profile-buttons .btn{width:100%}.nd-store .mobile-bottom.with-profile a,.nd-store .mobile-bottom.with-profile button{font-size:8px}.nd-store .profile-mobile-link{display:block}}
