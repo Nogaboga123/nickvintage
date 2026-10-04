@@ -196,11 +196,9 @@
       <p class="eyebrow">N&amp;D VINTAGE CHECKOUT</p><h2>BESTELLUNG</h2>
       <div class="checkout-layout">
         <form id="checkoutForm">
-          <label>E-Mail<input type="email" required placeholder="deine@email.de"></label>
-          <div class="two"><label>Vorname<input required></label><label>Nachname<input required></label></div>
-          <label>Adresse<input required></label>
-          <div class="two"><label>PLZ<input required></label><label>Ort<input required></label></div>
-          <label>Land<select id="shippingCountry" required><option value="DE">Deutschland</option><option value="AT">Österreich</option><option value="CH">Schweiz</option></select></label>
+          <label>E-Mail<input type="email" required placeholder="deine@email.de" autocomplete="email"></label>
+          <label>Lieferland<select id="shippingCountry" required><option value="DE">Deutschland</option><option value="AT">Österreich</option><option value="CH">Schweiz</option></select></label>
+          <p class="payment-note">Lieferadresse und Zahlungsdaten gibst du sicher im nächsten Schritt beim Zahlungsanbieter ein.</p>
           <label class="check"><input type="checkbox" required> Ich akzeptiere die AGB und habe die Widerrufsinformationen gelesen.</label>
           <button class="btn btn-dark full">BESTELLUNG PRÜFEN</button>
         </form>
