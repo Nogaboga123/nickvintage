@@ -117,20 +117,20 @@ function auth(req,res,next){
  }
  next();
 }
-app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||""})});
-app.get("/api/site-settings",auth,(req,res)=>{const x=readSettings();res.json({siteOpen:!!x.siteOpen,dropName:x.dropName||"DROP 01",dropDate:x.dropDate||""})});
+app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100}})});
+app.get("/api/site-settings",auth,(req,res)=>{const x=readSettings();res.json({siteOpen:!!x.siteOpen,dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100},discount:x.discount||{code:"",percent:0,active:false}})});
 app.put("/api/site-settings",auth,(req,res)=>{
  const cur={...readSettings()}, body=req.body||{};
  if(typeof body.siteOpen==="boolean")cur.siteOpen=body.siteOpen;
  if(typeof body.dropName==="string")cur.dropName=body.dropName.trim().slice(0,60);
- if(typeof body.dropDate==="string")cur.dropDate=body.dropDate.trim().slice(0,40);
+ if(typeof body.dropDate==="string")cur.dropDate=body.dropDate.trim().slice(0,40);if(body.shipping&&typeof body.shipping==="object")cur.shipping={DE:Math.max(0,Number(body.shipping.DE)||0),AT:Math.max(0,Number(body.shipping.AT)||0),CH:Math.max(0,Number(body.shipping.CH)||0),freeFrom:Math.max(0,Number(body.shipping.freeFrom)||0)};if(body.discount&&typeof body.discount==="object")cur.discount={code:String(body.discount.code||"").trim().toUpperCase().slice(0,30),percent:Math.max(0,Math.min(100,Number(body.discount.percent)||0)),active:!!body.discount.active};
  if(typeof body.earlyPassword==="string" && body.earlyPassword.trim()){
   if(process.env.EARLY_ACCESS_PASSWORD){
    return res.status(409).json({error:"Das Early-Access-Passwort wird dauerhaft über Render (EARLY_ACCESS_PASSWORD) verwaltet."});
   }
   cur.earlyPasswordHash=hash(body.earlyPassword.trim());
  }
- writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||""});
+ writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||"",shipping:cur.shipping,discount:cur.discount});
 });
 
 app.post("/api/returns",(req,res)=>{
@@ -232,20 +232,20 @@ app.post("/api/create-checkout-session",async(req,res)=>{
  try{
   if(!stripe)return res.status(503).json({error:"Stripe ist noch nicht konfiguriert."});
   const db=readProducts(), items=Array.isArray(req.body.items)?req.body.items:[];
-  const line_items=[];
+  const line_items=[];let subtotal=0;
   for(const x of items){
    const p=db.find(y=>y.id===Number(x.id));const qty=Math.max(1,Math.min(10,Number(x.qty)||1));
    if(!p||p.hidden||(p.publishAt&&new Date(p.publishAt).getTime()>Date.now()))return res.status(400).json({error:"Produkt ist nicht verfügbar"});
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
    const checkoutImage=p.image?(p.image.startsWith("http://")||p.image.startsWith("https://")?p.image:publicBaseUrl+p.image):"";
-   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:checkoutImage?[checkoutImage]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});
+   line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:checkoutImage?[checkoutImage]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});subtotal+=Number(p.price)*qty;
   }
-  const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
+  const cfg=readSettings(),discount=cfg.discount||{},code=String(req.body.discountCode||"").trim().toUpperCase();if(code&&discount.active&&code===discount.code&&discount.percent>0){line_items.push({price_data:{currency:"eur",product_data:{name:"Rabatt "+discount.code},unit_amount:-Math.round(subtotal*discount.percent)},quantity:1})}const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
   const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    line_items,
-   shipping_address_collection:{allowed_countries:["DE","AT","CH"]},
+   shipping_address_collection:{allowed_countries:["DE","AT","CH"]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.DE||4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser Versand":"Standardversand"}}],
    customer_email:customerEmail||undefined,
    metadata:{items:itemMeta},
    success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
