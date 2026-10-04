@@ -132,10 +132,13 @@ app.get("/produkt.html",(req,res,next)=>{
   const pageUrl=base+"/produkt.html?id="+encodeURIComponent(id);
   const rawImage=String(p.image||((Array.isArray(p.images)&&p.images[0])||"")).trim();
   const image=rawImage?(rawImage.startsWith("http")?rawImage:base+(rawImage.startsWith("/")?"":"/")+rawImage):base+"/nd-vintage-social-share.jpg";
-  const title=String(p.name||"Vintage Piece")+" — N&D VINTAGE";
-  const desc=Number(p.price||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+" · Größe "+String(p.size||"—")+" · "+String(p.condition||"Vintage Piece");
-  const meta='<meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'">';
-  res.type("html").send(file.replace("</head>",meta+"</head>"));
+  const title=String(p.name||"Vintage Piece")+" | Vintage Streetwear | N&D VINTAGE";
+  const price=Number(p.price||0);
+  const desc=(String(p.description||"").trim()||String(p.name||"Vintage Piece")+" – Vintage "+String(p.cat||"Streetwear")+" in Größe "+String(p.size||"—")+", Zustand "+String(p.condition||"Vintage Piece")+".")+" Preis: "+price.toLocaleString("de-DE",{style:"currency",currency:"EUR"})+".";
+  const availability=(p.status==="sold"||Number(p.stock||0)<=0)?"https://schema.org/OutOfStock":"https://schema.org/InStock";
+  const productJson=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:String(p.name||"Vintage Piece"),description:desc,image:[image],sku:"ND-"+id,brand:{"@type":"Brand",name:String(p.code||p.tag||"N&D VINTAGE")},itemCondition:"https://schema.org/UsedCondition",offers:{"@type":"Offer",url:pageUrl,priceCurrency:"EUR",price:price.toFixed(2),availability,itemCondition:"https://schema.org/UsedCondition",seller:{"@type":"Organization",name:"N&D VINTAGE"}}}).replace(/</g,"\\u003c");
+  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta property="product:price:amount" content="'+escMeta(price.toFixed(2))+'"><meta property="product:price:currency" content="EUR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'"><script type="application/ld+json">'+productJson+'<\\/script>';
+  res.type("html").send(file.replace(/<title>[^<]*<\\/title>/i,"").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
 app.use(express.static(__dirname,{index:false}));
@@ -309,7 +312,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
 app.get("/robots.txt",(_req,res)=>res.type("text/plain").send("User-agent: *\nAllow: /\nSitemap: "+publicBaseUrl+"/sitemap.xml\n"));
-app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html","/suche.html",...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+publicBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
+app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+publicBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
 async function start(){
  if(pool){
