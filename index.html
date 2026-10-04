@@ -42,61 +42,26 @@
   </div>
 
   <main id="home">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">N&amp;D VINTAGE · CURATED VINTAGE</p>
-        <h1>WEAR<br><em>HISTORY.</em></h1>
-        <p class="hero-text">Einzelstücke. Charakter. Streetwear aus vergangenen Jahrzehnten — sorgfältig ausgewählt für deinen Style.</p>
-        <div class="hero-actions">
-          <a class="btn btn-dark" href="#shop">SHOP NOW</a>
-          <a class="btn btn-light" href="#drop">NÄCHSTER DROP</a>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="hero-card card-a"><span>01</span><strong>RARE<br>TRACKSUITS</strong></div>
-        <div class="hero-card card-b"><span>02</span><strong>90s<br>DENIM</strong></div>
-        <div class="hero-sticker">ONE<br>OF<br>ONE</div>
-      </div>
+    <section class="kv-hero">
+      <div class="kv-hero-bg"></div>
+      <div class="kv-hero-content"><p>NEW DROP</p><h1>DROP IS<br>LIVE.</h1><span>Unique Vintage Pieces · One of One</span><a class="kv-shop-btn" href="#shop">SHOP NOW</a></div>
     </section>
-
-    <section class="ticker" aria-label="N&amp;D VINTAGE Werte">
-      <div>ONE OF ONE</div><div>AUTHENTIC VINTAGE</div><div>FAST SHIPPING</div><div>14 DAY RETURNS</div><div>ONE OF ONE</div>
+    <section class="kv-featured">
+      <div class="kv-feature-copy"><small>SELECTED FOR YOU</small><h2>VINTAGE<br>STREETWEAR.</h2><a href="#shop">SHOP NOW →</a></div>
+      <div class="kv-feature-image"></div>
     </section>
-
-    <section class="drop-section" id="drop">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">THE NEXT DROP</p>
-          <h2 id="dropTitle">DROP <span>01</span></h2>
-        </div>
-        <div class="countdown-wrap"><small>START IN</small><strong id="countdown">--:--:--</strong></div>
-      </div>
-      <div class="drop-box">
-        <div>
-          <h3>Neue Pieces.<br>Keine Wiederholungen.</h3>
-          <p>Unsere Vintage-Artikel sind Einzelstücke. Wenn ein Piece verkauft ist, kommt es nicht einfach wieder ins Regal.</p>
-        </div>
-        <form id="earlyForm" class="early-form">
-          <label>EARLY ACCESS</label>
-          <div><input type="email" id="email" required placeholder="deine@email.de"><button>BEKANNTGEBEN</button></div>
-          <small id="earlyMsg">Du bekommst eine Nachricht, sobald der Drop live ist.</small>
-        </form>
-      </div>
-    </section>
-
-    <section class="categories shop-categories" id="categories">
-      <div class="section-head"><div><p class="eyebrow">SHOP BY CATEGORY</p><h2>KATEGORIEN</h2></div></div>
-      <div class="category-grid">
-        <a href="#shop" data-cat="Tracksuits"><span>01</span><b>TRACKSUITS</b><i>→</i></a>
-        <a href="#shop" data-cat="Trackpants"><span>02</span><b>TRACKPANTS</b><i>→</i></a>
-        <a href="#shop" data-cat="Jacken"><span>03</span><b>JACKEN</b><i>→</i></a>
-        <a href="#shop" data-cat="Hoodies"><span>04</span><b>HOODIES</b><i>→</i></a>
-      </div>
+    <section class="kv-quick">
+      <a href="#shop" data-cat="Tracksuits">TRACKSUITS <span>→</span></a>
+      <a href="#shop" data-cat="Trackpants">TRACKPANTS <span>→</span></a>
+      <a href="#shop" data-cat="Jacken">JACKETS <span>→</span></a>
+      <a href="#shop" data-cat="Jeans">JEANS <span>→</span></a>
+      <a href="#shop" data-cat="Hoodies">SWEATER & HOODIES <span>→</span></a>
+      <a href="#shop" data-cat="Shirts">POLOS & SHIRTS <span>→</span></a>
     </section>
 
     <section class="shop-section" id="shop">
       <div class="section-head">
-        <div><p class="eyebrow">CURATED FOR YOU</p><h2>SHOP</h2></div>
+        <div><p class="eyebrow">LATEST PIECES</p><h2>NEW IN</h2></div>
         <span id="productTotal"></span>
       </div>
       <div class="shop-controls"><button type="button" class="filter-toggle" id="filterToggle">FILTER & SORTIERUNG <span>+</span></button>
@@ -127,6 +92,8 @@
       </div></div>
       <div class="products" id="products"></div>
     </section>
+
+    <section class="drop-section kv-drop" id="drop"><div class="section-head"><div><p class="eyebrow">NEXT RELEASE</p><h2 id="dropTitle">DROP 01</h2></div><div class="countdown-wrap"><small>START IN</small><strong id="countdown">--:--:--</strong></div></div><div class="drop-box"><div><h3>Neue Pieces.<br>Keine Wiederholungen.</h3><p>Einzelstücke – wenn weg, dann weg.</p></div><form id="earlyForm" class="early-form"><label>EARLY ACCESS</label><div><input type="email" id="email" required placeholder="deine@email.de"><button>BEKANNTGEBEN</button></div><small id="earlyMsg">Du bekommst eine Nachricht, sobald der Drop live ist.</small></form></div></section>
 
     <section class="benefit-strip"><div><b>✓ GEPRÜFTE PIECES</b><span>Zustand & Maße transparent</span></div><div><b>↗ SCHNELLER VERSAND</b><span>Sicher verpackt aus Deutschland</span></div><div><b>♡ EINZELSTÜCKE</b><span>Wenn weg, dann weg</span></div></section>
 
