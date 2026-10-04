@@ -266,14 +266,14 @@ app.post("/api/admin/login",async(req,res)=>{
   loginAttempts.delete(key);
   const token=crypto.randomBytes(32).toString("hex");
   sessions.set(token,Date.now()+12*60*60*1000);
-  res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api/admin"});
+  res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api"});
   res.json({ok:true});
  }catch(e){res.status(500).json({error:"Login-Fehler"})}
 });
 app.post("/api/admin/logout",(req,res)=>{
  const token=req.cookies?.nv_admin;
  if(token)sessions.delete(token);
- res.clearCookie("nv_admin",{path:"/api/admin",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
+ res.clearCookie("nv_admin",{path:"/api",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
  res.json({ok:true});
 });
 app.post("/api/admin/products",auth,async(req,res)=>{
