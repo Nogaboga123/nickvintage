@@ -86,6 +86,25 @@ const adminPassword=process.env.ADMIN_PASSWORD||"";
 const sessions=new Map();
 const loginAttempts=new Map();
 const earlyTokens=new Map();
+const EARLY_ACCESS_TTL=12*60*60*1000;
+function createEarlySession(passwordHash,now=Date.now()){
+ const payload=(now+EARLY_ACCESS_TTL)+"."+crypto.randomBytes(24).toString("hex");
+ const signature=crypto.createHmac("sha256",passwordHash).update("early-access:"+payload).digest("hex");
+ return payload+"."+signature;
+}
+function validEarlySession(token,passwordHash,now=Date.now()){
+ if(typeof token!=="string")return false;
+ const parts=token.split(".");
+ if(parts.length!==3||!/^\d{13}$/.test(parts[0])||!/^[a-f0-9]{48}$/.test(parts[1])||!/^[a-f0-9]{64}$/.test(parts[2]))return false;
+ const expires=Number(parts[0]);
+ if(expires<=now||expires>now+EARLY_ACCESS_TTL)return false;
+ const expected=crypto.createHmac("sha256",passwordHash).update("early-access:"+parts[0]+"."+parts[1]).digest();
+ return crypto.timingSafeEqual(expected,Buffer.from(parts[2],"hex"));
+}
+function setEarlyCookie(req,res,passwordHash){
+ res.cookie("nv_early_access",createEarlySession(passwordHash),{httpOnly:true,secure:process.env.NODE_ENV==="production"||req.secure||req.get("x-forwarded-proto")==="https",sameSite:"lax",maxAge:EARLY_ACCESS_TTL,path:"/"});
+}
+
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const stripeWebhookSecret=process.env.STRIPE_WEBHOOK_SECRET||"";
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
@@ -118,10 +137,13 @@ app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.s
 app.use(express.json({limit:"2mb"})); app.use(cookieParser());
 app.use((req,res,next)=>{
  const protectedPage=req.path==="/" || req.path==="/index.html";
- if(!protectedPage || readSettings().siteOpen) return next();
+ if(!protectedPage)return next();
+ res.setHeader("Cache-Control","private, no-store");
+ const settings=readSettings();
+ if(settings.siteOpen || validEarlySession(req.cookies?.nv_early_access,settings.earlyPasswordHash))return next();
  const token=String(req.query.access||"");
  const valid=token && earlyTokens.has(token) && earlyTokens.get(token)>Date.now();
- if(valid){ earlyTokens.delete(token); return next(); }
+ if(valid){earlyTokens.delete(token);setEarlyCookie(req,res,settings.earlyPasswordHash);return res.redirect("/");}
  res.status(200).send(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N&D VINTAGE — Early Access</title><meta property="og:title" content="N&D VINTAGE — Vintage Streetwear"><meta property="og:description" content="Kuratierte Vintage Streetwear, Einzelstücke und neue Drops."><meta property="og:type" content="website"><meta property="og:url" content="https://nickvintage.onrender.com/"><meta property="og:image" content="https://nickvintage.onrender.com/nd-vintage-social-share.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="N&D VINTAGE — kuratierte Vintage Streetwear"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="N&D VINTAGE — Vintage Streetwear"><meta name="twitter:description" content="Kuratierte Vintage Streetwear, Einzelstücke und neue Drops."><meta name="twitter:image" content="https://nickvintage.onrender.com/nd-vintage-social-share.jpg"><style>*{box-sizing:border-box}body{margin:0;background:#111 url("/nd-vintage-social-share.jpg") center/cover no-repeat fixed;color:#fff;font-family:Inter,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px;position:relative}body:before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:0}.box{width:min(460px,100%);border:1px solid rgba(255,255,255,.22);padding:42px;background:rgba(23,23,23,.88);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);position:relative;z-index:1}.ey{font-size:10px;letter-spacing:.2em;font-weight:800;color:#aaa}.logo{font-size:28px;font-weight:900;letter-spacing:-.06em;margin:12px 0 35px}.logo span{font-weight:400}.box h1{font-size:48px;line-height:.9;letter-spacing:-.07em;margin:0 0 14px}.box p{color:#999;font-size:13px;line-height:1.6}.box form{display:flex;gap:8px;margin-top:25px}.box input{flex:1;background:#222;color:#fff;border:1px solid #444;padding:15px;outline:0}.box button{background:#fff;color:#111;border:0;padding:0 18px;font-weight:900;cursor:pointer}.err{color:#ff8d8d!important;font-size:11px!important;margin-top:12px}</style></head><body><div class="box"><div class="ey">N&D VINTAGE · EARLY ACCESS</div><div class="logo">N&amp;D <span>VINTAGE</span></div><h1>EARLY<br>ACCESS.</h1><p>Der Shop ist noch nicht öffentlich geöffnet. Wenn du einen Early-Access-Code hast, kannst du jetzt eintreten.</p><form method="POST" action="/api/early-access"><input name="password" type="password" placeholder="Early-Access-Passwort" required autofocus><button>ÖFFNEN</button></form>${req.query.error?'<p class="err">Falsches Passwort.</p>':''}</div></body></html>`);
 });
 app.use("/uploads",express.static(uploadDir));
@@ -162,11 +184,12 @@ app.get("/kategorie.html",(req,res,next)=>{
 });
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
- const ok=hash(req.body?.password||"")===readSettings().earlyPasswordHash;
+ const settings=readSettings();
+ const ok=hash(req.body?.password||"")===settings.earlyPasswordHash;
+ res.setHeader("Cache-Control","no-store");
  if(!ok)return res.redirect("/?error=1");
- const token=crypto.randomBytes(24).toString("hex");
- earlyTokens.set(token,Date.now()+30*1000);
- res.redirect("/?access="+encodeURIComponent(token));
+ setEarlyCookie(req,res,settings.earlyPasswordHash);
+ res.redirect("/");
 });
 function auth(req,res,next){
  const token=req.cookies?.nv_admin;
