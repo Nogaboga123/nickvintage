@@ -80,7 +80,7 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
    const orders=readOrders();
    if(!orders.some(o=>o.stripeSessionId===id)){
     const parsed=String(s.metadata?.items||"").split(",").filter(Boolean).map(v=>{const [pid,qty]=v.split("x").map(Number);return {id:pid,qty}});
-    const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,qty:x.qty}:null}).filter(Boolean);
+    const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,purchasePrice:Number(p.purchasePrice||0),qty:x.qty}:null}).filter(Boolean);
     for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
     writeProducts(db);
     orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",carrier:"",createdAt:new Date().toISOString()});
@@ -154,7 +154,12 @@ app.post("/api/order-status",(req,res)=>{
  res.json({id:found.id,status:found.status,tracking,carrier,trackingUrl,createdAt:found.createdAt,items:(found.items||[]).map(x=>({name:x.name,size:x.size,qty:x.qty}))});
 });
 app.get("/api/admin/orders",auth,(_req,res)=>res.json(readOrders()));
-app.get("/api/admin/stats",auth,(_req,res)=>{const orders=readOrders().filter(x=>x.status!=="Storniert"),products=readProducts(),revenue=orders.reduce((n,x)=>n+Number(x.total||0),0);let cost=0;for(const o of orders)for(const item of (o.items||[])){const p=products.find(x=>Number(x.id)===Number(item.id));cost+=Number(p?.purchasePrice||0)*Number(item.qty||1)}res.json({revenue,orders:orders.length,average:orders.length?revenue/orders.length:0,estimatedProfit:revenue-cost})});
+app.get("/api/admin/stats",auth,(_req,res)=>{
+ const orders=readOrders().filter(x=>x.status!=="Storniert"),products=readProducts(),revenue=orders.reduce((n,x)=>n+Number(x.total||0),0);
+ let cost=0;for(const o of orders)for(const item of (o.items||[])){const p=products.find(x=>Number(x.id)===Number(item.id));cost+=Number(item.purchasePrice??p?.purchasePrice??0)*Number(item.qty||1)}
+ const now=new Date(),days=[];for(let n=13;n>=0;n--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-n);const next=new Date(d);next.setDate(next.getDate()+1);const value=orders.filter(o=>{const t=new Date(o.createdAt);return t>=d&&t<next}).reduce((sum,o)=>sum+Number(o.total||0),0);days.push({date:d.toISOString().slice(0,10),revenue:value})}
+ res.json({revenue,orders:orders.length,average:orders.length?revenue/orders.length:0,estimatedProfit:revenue-cost,cost,margin:revenue?((revenue-cost)/revenue)*100:0,daily:days})
+});
 app.put("/api/admin/orders/:id",auth,(req,res)=>{
  const list=readOrders(),i=list.findIndex(x=>x.id===req.params.id);
  if(i<0)return res.status(404).json({error:"Bestellung nicht gefunden"});
@@ -203,7 +208,7 @@ app.post("/api/admin/products",auth,(req,res)=>{
  const body=req.body||{};
  const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
  const image=String(body.image||"");const images=Array.isArray(body.images)?body.images.map(String).filter(Boolean):[];
- const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),publishAt:String(body.publishAt||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
+ const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,createdAt:new Date().toISOString(),cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),publishAt:String(body.publishAt||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
  p.push(item);writeProducts(p);res.status(201).json(item);
 });
 app.put("/api/admin/products/:id",auth,(req,res)=>{
