@@ -20,9 +20,11 @@ const settingsFile=path.join(dataDir,"settings.json");
 const returnsFile=path.join(dataDir,"returns.json");
 const ordersFile=path.join(dataDir,"orders.json");
 const subscribersFile=path.join(dataDir,"subscribers.json");
+const analyticsFile=path.join(dataDir,"analytics.json");
 if(!fs.existsSync(returnsFile)) fs.writeFileSync(returnsFile,"[]");
 if(!fs.existsSync(ordersFile)) fs.writeFileSync(ordersFile,"[]");
 if(!fs.existsSync(subscribersFile)) fs.writeFileSync(subscribersFile,"[]");
+if(!fs.existsSync(analyticsFile)) fs.writeFileSync(analyticsFile,"{}");
 
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
@@ -66,6 +68,8 @@ const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ordersFile,"utf8"))}
 const writeOrders=x=>fs.writeFileSync(ordersFile,JSON.stringify(x,null,2));
 const readSubscribers=()=>{try{return JSON.parse(fs.readFileSync(subscribersFile,"utf8"))}catch{return []}};
 const writeSubscribers=x=>fs.writeFileSync(subscribersFile,JSON.stringify(x,null,2));
+const readAnalytics=()=>{try{return JSON.parse(fs.readFileSync(analyticsFile,"utf8"))}catch{return {}}};
+const writeAnalytics=x=>fs.writeFileSync(analyticsFile,JSON.stringify(x,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
@@ -192,6 +196,8 @@ const upload=multer({storage:multer.diskStorage({
 }),limits:{fileSize:8*1024*1024},fileFilter:(_r,f,cb)=>cb(null,/^image\/(jpeg|png|webp|gif)$/.test(f.mimetype))});
 
 
+app.post("/api/analytics",(req,res)=>{const id=Number(req.body?.productId),type=String(req.body?.type||"");if(!Number.isFinite(id)||!["view","favorite"].includes(type))return res.status(400).json({error:"Ungültige Analytics-Daten"});const a=readAnalytics(),k=String(id);a[k]=a[k]||{views:0,favorites:0};a[k][type==="view"?"views":"favorites"]++;writeAnalytics(a);res.json({ok:true})});
+app.get("/api/admin/analytics",auth,(_req,res)=>res.json(readAnalytics()));
 app.get("/api/products",(_req,res)=>{const now=Date.now();res.json(readProducts().filter(p=>!p.hidden&&(!p.publishAt||new Date(p.publishAt).getTime()<=now)))});
 app.get("/api/admin/products",auth,(_req,res)=>res.json(readProducts()));
 app.post("/api/admin/login",async(req,res)=>{
