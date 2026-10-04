@@ -19,8 +19,10 @@ const dbFile=path.join(dataDir,"products.json");
 const settingsFile=path.join(dataDir,"settings.json");
 const returnsFile=path.join(dataDir,"returns.json");
 const ordersFile=path.join(dataDir,"orders.json");
+const subscribersFile=path.join(dataDir,"subscribers.json");
 if(!fs.existsSync(returnsFile)) fs.writeFileSync(returnsFile,"[]");
 if(!fs.existsSync(ordersFile)) fs.writeFileSync(ordersFile,"[]");
+if(!fs.existsSync(subscribersFile)) fs.writeFileSync(subscribersFile,"[]");
 
 if(!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify([
 {id:1,name:"Nike Trackjacket 90s",cat:"Jacken",size:"L",price:89.99,condition:"Sehr gut",tag:"RARE",code:"NIKE",image:"",stock:1,new:true},
@@ -62,6 +64,8 @@ const readReturns=()=>{try{return JSON.parse(fs.readFileSync(returnsFile,"utf8")
 const writeReturns=x=>fs.writeFileSync(returnsFile,JSON.stringify(x,null,2));
 const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ordersFile,"utf8"))}catch{return []}};
 const writeOrders=x=>fs.writeFileSync(ordersFile,JSON.stringify(x,null,2));
+const readSubscribers=()=>{try{return JSON.parse(fs.readFileSync(subscribersFile,"utf8"))}catch{return []}};
+const writeSubscribers=x=>fs.writeFileSync(subscribersFile,JSON.stringify(x,null,2));
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
@@ -132,6 +136,9 @@ app.put("/api/site-settings",auth,(req,res)=>{
  }
  writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||"",shipping:cur.shipping,discount:cur.discount});
 });
+
+app.post("/api/drop-alert",(req,res)=>{const email=String(req.body?.email||"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Bitte eine gültige E-Mail eingeben."});const list=readSubscribers();if(!list.some(x=>x.email===email)){list.unshift({email,createdAt:new Date().toISOString()});writeSubscribers(list)}res.status(201).json({ok:true,message:"Du bist beim Drop-Alert dabei."})});
+app.get("/api/admin/drop-alerts",auth,(_req,res)=>res.json(readSubscribers()));
 
 app.post("/api/returns",(req,res)=>{
  const body=req.body||{};
