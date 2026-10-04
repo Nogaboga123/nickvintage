@@ -144,7 +144,7 @@ document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
  const btn=e.target.querySelector("button"); btn.disabled=true; btn.textContent="CHECKOUT WIRD GELADEN…";
  try{
-  const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim(),discountCode})});
+  const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim(),discountCode,shippingCountry:document.getElementById("shippingCountry")?.value||"DE"})});
   const data=await r.json();
   if(!r.ok) throw new Error(data.error||"Checkout-Fehler");
   if(data.url){location.href=data.url;return;}
