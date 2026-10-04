@@ -105,3 +105,30 @@ document.querySelectorAll("#categorySize,#sizeFilter").forEach(select=>{
  const populate=()=>{const selected=select.value;const existing=[...select.options].filter(o=>o.value).map(o=>o.value);const values=[...new Set([...ndSizes,...existing])];const signature=values.join(";");if([...select.options].filter(o=>o.value).map(o=>o.value).join(";")===signature)return;select.dataset.ndSizes=signature;select.replaceChildren(new Option("Alle Größen",""),...values.map(x=>new Option(x,x)));select.value=selected};
  new MutationObserver(populate).observe(select,{childList:true});populate();
 });
+
+function enhanceSearchableFilter(select,label){
+ const wrapper=document.createElement("div");wrapper.className="brand-picker searchable-filter";
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="brand-picker-toggle";toggle.setAttribute("aria-label",label+" auswählen");toggle.setAttribute("aria-expanded","false");
+ const panel=document.createElement("div");panel.className="brand-picker-panel";panel.hidden=true;
+ const search=document.createElement("input");search.type="search";search.placeholder=label+" suchen …";search.setAttribute("aria-label",label+" durchsuchen");search.autocomplete="off";
+ const list=document.createElement("div");list.className="brand-picker-list";panel.append(search,list);wrapper.append(toggle,panel);select.after(wrapper);select.hidden=true;
+ const render=()=>{
+  toggle.textContent=select.selectedOptions[0]?.textContent||label;
+  list.replaceChildren();const q=search.value.trim().toLocaleLowerCase("de");
+  [...select.options].filter(o=>!q||o.textContent.toLocaleLowerCase("de").includes(q)).forEach(option=>{
+   const b=document.createElement("button");b.type="button";b.className="brand-choice";b.textContent=option.textContent;b.setAttribute("aria-pressed",String(select.value===option.value));
+   b.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event("change",{bubbles:true}));panel.hidden=true;toggle.setAttribute("aria-expanded","false");render();toggle.focus()};list.appendChild(b);
+  });
+  if(!list.childElementCount){const p=document.createElement("p");p.textContent="Keine passende Auswahl gefunden.";list.appendChild(p)}
+ };
+ toggle.onclick=()=>{panel.hidden=!panel.hidden;toggle.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){search.value="";render();search.focus()}};
+ search.addEventListener("input",render);select.addEventListener("change",render);
+ new MutationObserver(render).observe(select,{childList:true});
+ wrapper.addEventListener("keydown",e=>{if(e.key==="Escape"){panel.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.focus()}});
+ document.addEventListener("click",e=>{if(!wrapper.contains(e.target)){panel.hidden=true;toggle.setAttribute("aria-expanded","false")}setTimeout(render,0)});
+ render();
+}
+const ndSearchFilterLabels={categorySize:"Größe",sizeFilter:"Größe",categoryPrice:"Preis",priceFilter:"Preis",colorFilter:"Farbe",availabilityFilter:"Verfügbarkeit",sort:"Sortierung"};
+Object.entries(ndSearchFilterLabels).forEach(([id,label])=>{const select=document.getElementById(id);if(select)enhanceSearchableFilter(select,label)});
+const ndFilterToggle=document.getElementById("filterToggle");
+if(ndFilterToggle){const icon=document.createElement("i");icon.className="filter-control-icon";icon.setAttribute("aria-hidden","true");icon.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>';ndFilterToggle.prepend(icon)}
