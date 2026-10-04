@@ -47,7 +47,7 @@ const productDefaults={
 const {Pool}=pg;
 const pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}}):null;
 const store={};
-const persist=async(key,value)=>{store[key]=value;if(pool)await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]);};
+const persist=async(key,value)=>{if(pool)await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]);store[key]=value;};
 const localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};
 const readProducts=()=>{const saved=store.products||localJson(dbFile,[]);return saved.map(p=>{const def=productDefaults[Number(p.id)]||{};return {...def,...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:(def.images||[]),stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
@@ -182,6 +182,7 @@ app.get("/kategorie.html",(req,res,next)=>{
   res.type("html").send(file.replace("<title>Produkt — N&D VINTAGE</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
+app.use((req,res,next)=>{if(req.path==="/admin.html"||req.path.startsWith("/api/admin/"))res.setHeader("Cache-Control","private, no-store");next()});
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const settings=readSettings();
@@ -193,7 +194,7 @@ app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)
 });
 function auth(req,res,next){
  const token=req.cookies?.nv_admin;
- const expires=token?sessions.get(token):0;
+ const expires=token?(sessions.get(token)||store.adminSessions?.[hash(token)]):0;
  if(!token||!expires||expires<=Date.now()){
   if(token)sessions.delete(token);
   return res.status(401).json({error:"Nicht autorisiert"});
@@ -288,14 +289,18 @@ app.post("/api/admin/login",async(req,res)=>{
   if(!ok){state.count++;loginAttempts.set(key,state);return res.status(401).json({ok:false,error:"Falsches Admin-Passwort"})}
   loginAttempts.delete(key);
   const token=crypto.randomBytes(32).toString("hex");
-  sessions.set(token,Date.now()+12*60*60*1000);
+  const expiry=Date.now()+12*60*60*1000;
+  const durableSessions=Object.fromEntries(Object.entries(store.adminSessions||{}).filter(([,expires])=>expires>Date.now()));
+  durableSessions[hash(token)]=expiry;
+  await persist("adminSessions",durableSessions);
+  sessions.set(token,expiry);
   res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api"});
   res.json({ok:true});
  }catch(e){res.status(500).json({error:"Login-Fehler"})}
 });
-app.post("/api/admin/logout",(req,res)=>{
+app.post("/api/admin/logout",async(req,res)=>{
  const token=req.cookies?.nv_admin;
- if(token)sessions.delete(token);
+ if(token){sessions.delete(token);const durableSessions={...(store.adminSessions||{})};delete durableSessions[hash(token)];await persist("adminSessions",durableSessions);}
  res.clearCookie("nv_admin",{path:"/api",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
  res.json({ok:true});
 });
@@ -322,10 +327,11 @@ app.delete("/api/admin/products/:id",auth,async(req,res)=>{
   res.json({ok:true});
  }catch(e){console.error("Produkt löschen:",e.message);res.status(500).json({error:"Produkt konnte nicht gelöscht werden."})}
 });
-app.post("/api/admin/upload",auth,upload.single("image"),(req,res)=>{
- if(!req.file)return res.status(400).json({error:"Bild fehlt oder Format nicht erlaubt"});
+app.post("/api/admin/upload",auth,(req,res)=>{upload.single("image")(req,res,error=>{
+ if(error)return res.status(400).json({error:error.code==="LIMIT_FILE_SIZE"?"Das Bild ist zu groß. Maximal 5 MB pro Bild.":error.message||"Bild konnte nicht hochgeladen werden."});
+ if(!req.file)return res.status(400).json({error:"Bild fehlt. Erlaubt: JPG, PNG und WEBP, maximal 5 MB."});
  res.json({url:"/uploads/"+req.file.filename});
-});
+});});
 
 app.post("/api/create-checkout-session",async(req,res)=>{
  try{
@@ -359,9 +365,9 @@ app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).e
 async function start(){
  if(pool){
   try{
-   const {rows}=await pool.query("SELECT key,value FROM shop_data WHERE key = ANY($1)",[["products","settings","returns","orders","subscribers","analytics"]]);
+   const {rows}=await pool.query("SELECT key,value FROM shop_data WHERE key = ANY($1)",[["products","settings","returns","orders","subscribers","analytics","adminSessions"]]);
    for(const row of rows)store[row.key]=row.value;
-   const seeds={products:localJson(dbFile,[]),settings:localJson(settingsFile,{}),returns:localJson(returnsFile,[]),orders:localJson(ordersFile,[]),subscribers:localJson(subscribersFile,[]),analytics:localJson(analyticsFile,{})};
+   const seeds={adminSessions:{},products:localJson(dbFile,[]),settings:localJson(settingsFile,{}),returns:localJson(returnsFile,[]),orders:localJson(ordersFile,[]),subscribers:localJson(subscribersFile,[]),analytics:localJson(analyticsFile,{})};
    for(const [key,value] of Object.entries(seeds))if(!(key in store)){await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO NOTHING",[key,JSON.stringify(value)]);store[key]=value}
    runtimeSettings=null;
    console.log("Neon-Datenbank verbunden.");
