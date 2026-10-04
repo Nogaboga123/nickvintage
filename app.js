@@ -131,7 +131,7 @@ document.getElementById("products").addEventListener("click",e=>{
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;renderProducts()});
 document.getElementById("sort").onchange=renderProducts;
 const filterToggle=document.getElementById("filterToggle"),filterPanel=document.getElementById("filterPanel");
-if(filterToggle&&filterPanel)filterToggle.onclick=()=>{const open=filterPanel.classList.toggle("open");const span=filterToggle.querySelector("span");if(span)span.textContent=open?"−":"+"};
+if(filterToggle&&filterPanel)filterToggle.onclick=()=>{const open=filterPanel.classList.toggle("open");filterToggle.setAttribute("aria-expanded",String(open));const span=filterToggle.querySelector("span");if(span)span.textContent=open?"−":"+"};
 document.getElementById("searchInput").oninput=()=>{};
 const favoritesBtn=document.getElementById("favoritesBtn");
 if(favoritesBtn)favoritesBtn.onclick=()=>{updateFavUI();const s=document.getElementById("favoritesSection");if(s){s.style.display="block";s.scrollIntoView({behavior:"smooth"})}};
