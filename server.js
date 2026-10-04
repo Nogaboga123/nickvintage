@@ -269,12 +269,12 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   const line_items=[];let subtotal=0;
   for(const x of items){
    const p=db.find(y=>y.id===Number(x.id));const qty=Math.max(1,Math.min(10,Number(x.qty)||1));
-   if(!p||p.hidden||(p.publishAt&&new Date(p.publishAt).getTime()>Date.now()))return res.status(400).json({error:"Produkt ist nicht verfügbar"});
+   if(!p||p.hidden||p.status==="sold"||Number(p.stock||0)<=0||(p.publishAt&&new Date(p.publishAt).getTime()>Date.now()))return res.status(400).json({error:"Produkt ist nicht verfügbar"});
    if(p.stock<qty)return res.status(400).json({error:`${p.name} ist nicht mehr in ausreichender Menge verfügbar.`});
    const checkoutImage=p.image?(p.image.startsWith("http://")||p.image.startsWith("https://")?p.image:publicBaseUrl+p.image):"";
    line_items.push({price_data:{currency:"eur",product_data:{name:p.name,images:checkoutImage?[checkoutImage]:[]},unit_amount:Math.round(p.price*100)},quantity:qty});subtotal+=Number(p.price)*qty;
   }
-  const cfg=readSettings(),discount=cfg.discount||{},code=String(req.body.discountCode||"").trim().toUpperCase();if(code&&discount.active&&code===discount.code&&discount.percent>0){const factor=Math.max(0,1-Number(discount.percent)/100);for(const li of line_items)li.price_data.unit_amount=Math.max(1,Math.round(li.price_data.unit_amount*factor))}const country=["DE","AT","CH"].includes(String(req.body.shippingCountry||"").toUpperCase())?String(req.body.shippingCountry).toUpperCase():"DE";const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
+  const cfg=readSettings(),discount=cfg.discount||{},code=String(req.body.discountCode||"").trim().toUpperCase();if(code&&(!discount.active||code!==String(discount.code||"").trim().toUpperCase()||Number(discount.percent)<=0))return res.status(400).json({error:"Rabattcode ist ungültig oder nicht aktiv."});if(code){const factor=Math.max(0.01,1-Number(discount.percent)/100);for(const li of line_items)li.price_data.unit_amount=Math.max(1,Math.round(li.price_data.unit_amount*factor));subtotal*=factor}const country=["DE","AT","CH"].includes(String(req.body.shippingCountry||"").toUpperCase())?String(req.body.shippingCountry).toUpperCase():"DE";const customerEmail=typeof req.body.customerEmail==="string" ? req.body.customerEmail.trim() : "";
   const itemMeta=items.map(x=>`${Number(x.id)}x${Math.max(1,Math.min(10,Number(x.qty)||1))}`).join(",");
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
