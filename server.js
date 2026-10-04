@@ -108,6 +108,24 @@ app.use((req,res,next)=>{
  res.status(200).send(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N&D VINTAGE — Early Access</title><meta property="og:title" content="N&D VINTAGE — Vintage Streetwear"><meta property="og:description" content="Kuratierte Vintage Streetwear, Einzelstücke und neue Drops."><meta property="og:type" content="website"><meta property="og:url" content="https://nickvintage.onrender.com/"><meta property="og:image" content="https://nickvintage.onrender.com/nd-vintage-social-share.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="N&D VINTAGE — kuratierte Vintage Streetwear"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="N&D VINTAGE — Vintage Streetwear"><meta name="twitter:description" content="Kuratierte Vintage Streetwear, Einzelstücke und neue Drops."><meta name="twitter:image" content="https://nickvintage.onrender.com/nd-vintage-social-share.jpg"><style>*{box-sizing:border-box}body{margin:0;background:#111;color:#fff;font-family:Inter,Arial,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}.box{width:min(460px,100%);border:1px solid #333;padding:42px;background:#171717}.ey{font-size:10px;letter-spacing:.2em;font-weight:800;color:#aaa}.logo{font-size:28px;font-weight:900;letter-spacing:-.06em;margin:12px 0 35px}.logo span{font-weight:400}.box h1{font-size:48px;line-height:.9;letter-spacing:-.07em;margin:0 0 14px}.box p{color:#999;font-size:13px;line-height:1.6}.box form{display:flex;gap:8px;margin-top:25px}.box input{flex:1;background:#222;color:#fff;border:1px solid #444;padding:15px;outline:0}.box button{background:#fff;color:#111;border:0;padding:0 18px;font-weight:900;cursor:pointer}.err{color:#ff8d8d!important;font-size:11px!important;margin-top:12px}</style></head><body><div class="box"><div class="ey">N&D VINTAGE · EARLY ACCESS</div><div class="logo">N&amp;D <span>VINTAGE</span></div><h1>EARLY<br>ACCESS.</h1><p>Der Shop ist noch nicht öffentlich geöffnet. Wenn du einen Early-Access-Code hast, kannst du jetzt eintreten.</p><form method="POST" action="/api/early-access"><input name="password" type="password" placeholder="Early-Access-Passwort" required autofocus><button>ÖFFNEN</button></form>\${req.query.error?'<p class="err">Falsches Passwort.</p>':''}</div></body></html>`);
 });
 app.use("/uploads",express.static(uploadDir));
+app.get("/produkt.html",(req,res,next)=>{
+ const id=Number(req.query.id);
+ if(!Number.isFinite(id))return next();
+ const p=readProducts().find(x=>Number(x.id)===id);
+ if(!p||p.hidden)return next();
+ try{
+  const file=fs.readFileSync(path.join(__dirname,"produkt.html"),"utf8");
+  const escMeta=v=>String(v??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const base=(process.env.PUBLIC_URL||"https://nickvintage.onrender.com").replace(/\/$/,"");
+  const pageUrl=base+"/produkt.html?id="+encodeURIComponent(id);
+  const rawImage=String(p.image||((Array.isArray(p.images)&&p.images[0])||"")).trim();
+  const image=rawImage?(rawImage.startsWith("http")?rawImage:base+(rawImage.startsWith("/")?"":"/")+rawImage):base+"/nd-vintage-social-share.jpg";
+  const title=String(p.name||"Vintage Piece")+" — N&D VINTAGE";
+  const desc=Number(p.price||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+" · Größe "+String(p.size||"—")+" · "+String(p.condition||"Vintage Piece");
+  const meta='<meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'">';
+  res.type("html").send(file.replace("</head>",meta+"</head>"));
+ }catch(e){next(e)}
+});
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const ok=hash(req.body?.password||"")===readSettings().earlyPasswordHash;
