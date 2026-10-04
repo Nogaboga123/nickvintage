@@ -1,34 +1,13 @@
 let trendingIds=new Set();
-let products=[
-{id:1,name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p1",new:true,status:"available"},
-{id:2,name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p2",new:true,status:"available"},
-{id:3,name:"Nike Tech Tracksuit — Navy",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p3",new:true,status:"available"},
-{id:4,name:"Ralph Lauren Pullover — Navy",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p4",new:true,status:"available"},
-{id:5,name:"Ralph Lauren Pullover — Beige",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p5",new:true,status:"available"},
-{id:6,name:"Ralph Lauren Pullover — Grey",cat:"Sweater",size:"L",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p6",new:true,status:"available"},
-{id:7,name:"Ralph Lauren Pullover — Black",cat:"Sweater",size:"M",price:89.99,condition:"Sehr gut",tag:"RALPH LAUREN",code:"RL",cls:"p7",new:true,status:"available"},
-{id:8,name:"Nike Tech Hoodie — Black",cat:"Hoodies",size:"L",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p8",new:true,status:"available"},
-{id:9,name:"Nike Tech Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p9",new:true,status:"available"},
-{id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
+let products=[];
+let productsLoaded=false;
 let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
 let discountCode=localStorage.getItem("nd-vintage-discount")||"";
 let publicSettings={shipping:{DE:4.99,AT:8.99,CH:12.99,freeFrom:100}};
 let favorites=(()=>{try{const v=JSON.parse(localStorage.getItem("nd-vintage-favorites-v2")||"[]");return Array.isArray(v)?[...new Set(v.map(Number).filter(Number.isFinite))]:[]}catch{return []}})();
 
-const imageMap={
-1:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_599,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/22860c98-b8c4-4779-99f0-893399c1dc00/M+NK+TCH+FLC+FZ+WR+HOODIE.png",
-2:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/cc350337-a9f2-453d-af2d-e007a3d8bc28/M+NK+TCH+FLC+ERGO+FZ.png",
-3:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/77f11517-6f39-4664-bbfe-12eb84126955/M+NK+TCH+FLC+FZ+WR+HOODIE.png",
-4:"https://images.unsplash.com/photo-1611312449408-fcece27cdbb7?auto=format&fit=crop&fm=jpg&q=88&w=1000",
-5:"https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&fm=jpg&q=88&w=1000",
-6:"https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&fm=jpg&q=88&w=1000",
-7:"https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&fm=jpg&q=88&w=1000",
-8:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/22860c98-b8c4-4779-99f0-893399c1dc00/M+NK+TCH+FLC+FZ+WR+HOODIE.png",
-9:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/cc350337-a9f2-453d-af2d-e007a3d8bc28/M+NK+TCH+FLC+ERGO+FZ.png",
-10:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/9b3adca5-2ea6-42f1-9eea-87da2804e175/M+NK+TCH+FLC+ERGO+FZ.png"
-};
-const imgFor=p=>p.image||imageMap[p.id]||"";
+const imgFor=p=>p.image||(Array.isArray(p.images)?p.images[0]:"")||"";
 const isFreshDrop=p=>{const t=new Date(p.publishAt||p.createdAt||0).getTime();return Number.isFinite(t)&&t>0&&Date.now()>=t&&Date.now()-t<=24*60*60*1000};
 const badgeFor=p=>p.status==="sold"?"SOLD":(Number(p.oldPrice)>Number(p.price)?"SALE":(trendingIds.has(Number(p.id))?"TRENDING":(isFreshDrop(p)?"NEW DROP":(p.new?"NEW":p.tag))));
 const imagesFor=p=>{const xs=Array.isArray(p.images)?p.images:(typeof p.images==="string"?p.images.split(/\n|,/):[]);return [...new Set([imgFor(p),...xs].map(x=>String(x||"").trim()).filter(Boolean))]};
@@ -40,6 +19,7 @@ const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+(Number(p.oldPrice)>Number(p.price)?'<s style="font-weight:400;color:#777;margin-right:6px">'+euro(Number(p.oldPrice))+'</s>':'')+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
 
 function renderProducts(){
+ if(!productsLoaded){document.getElementById("productTotal").textContent="";document.getElementById("products").innerHTML='<div class="empty" role="status">Pieces werden geladen…</div>';return;}
  let list=products.filter(p=>!p.hidden&&(activeFilter==="Alle"||p.cat===activeFilter));
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
  if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
@@ -81,6 +61,7 @@ function toggleFav(id){
 }
 window.toggleFav=toggleFav;
 function updateCart(){
+ if(!productsLoaded){document.getElementById("cartCount").textContent=cart.reduce((n,x)=>n+Number(x.qty||0),0);return;}
  cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
  const count=cart.reduce((s,i)=>s+i.qty,0);
  document.getElementById("cartCount").textContent=count;
@@ -174,4 +155,21 @@ function fillAdvancedFilters(){const brand=document.getElementById("brandFilter"
 ["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderProducts));
 document.getElementById("resetFilters")?.addEventListener("click",()=>{["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id).value="");activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()});
 fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI();
-(async()=>{try{const [r,t,cfg]=await Promise.all([fetch("/api/products"),fetch("/api/trending"),fetch("/api/public-settings")]);if(r.ok)products=await r.json();if(cfg.ok)publicSettings=await cfg.json();if(t.ok){const ts=await t.json();trendingIds=new Set(ts.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)))}fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI()}catch(e){console.error(e)}})();
+async function loadCatalog(){
+ productsLoaded=false;renderProducts();
+ try{
+  const response=await fetch("/api/products",{cache:"no-store"});
+  if(!response.ok)throw Error("Produkte konnten nicht geladen werden");
+  const data=await response.json();
+  if(!Array.isArray(data))throw Error("Ungültige Produktdaten");
+  products=data;productsLoaded=true;
+  fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI();
+ }catch(error){
+  products=[];productsLoaded=false;document.getElementById("productTotal").textContent="";
+  document.getElementById("products").innerHTML='<div class="empty-state"><h2>Pieces konnten nicht geladen werden</h2><p>Bitte versuche es erneut. Dein Warenkorb bleibt gespeichert.</p><button type="button" class="btn btn-dark" id="retryCatalog">Erneut laden</button></div>';
+  document.getElementById("retryCatalog").addEventListener("click",loadCatalog);console.error(error);
+ }
+}
+loadCatalog();
+fetch("/api/trending").then(r=>{if(!r.ok)throw Error();return r.json()}).then(xs=>{trendingIds=new Set(xs.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)));if(productsLoaded)renderProducts()}).catch(()=>{});
+fetch("/api/public-settings").then(r=>{if(!r.ok)throw Error();return r.json()}).then(settings=>{publicSettings=settings;if(productsLoaded)updateCart()}).catch(()=>{});
