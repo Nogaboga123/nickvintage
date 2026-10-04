@@ -35,8 +35,10 @@ const imagesFor=p=>{const xs=Array.isArray(p.images)?p.images:(typeof p.images==
 const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 
+function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
+
 function renderProducts(){
- let list=products.filter(p=>!p.hidden&&(activeFilter==="Alle"||p.cat===activeFilter));
+ let list=products.filter(p=>!p.hidden&&p.status!=="sold"&&(activeFilter==="Alle"||p.cat===activeFilter));
  const brand=document.getElementById("brandFilter")?.value||"",size=document.getElementById("sizeFilter")?.value||"",color=document.getElementById("colorFilter")?.value||"",price=document.getElementById("priceFilter")?.value||"",availability=document.getElementById("availabilityFilter")?.value||"";
  if(brand)list=list.filter(p=>(p.tag||p.code||"").toLowerCase().includes(brand.toLowerCase())||(p.name||"").toLowerCase().includes(brand.toLowerCase()));
  if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
@@ -56,6 +58,7 @@ function renderProducts(){
   const imgs=imagesFor(p),second=imgs[1]||"";
   return '<article class="product" data-id="'+id+'" style="position:relative"><button type="button" class="fav" data-fav-id="'+id+'" aria-label="Favorit" aria-pressed="'+fav+'">'+(fav?'♥':'♡')+'</button><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgs[0]?'<img class="product-primary" loading="lazy" src="'+imgs[0]+'" alt="">'+(second?'<img class="product-secondary" loading="lazy" src="'+second+'" alt="">':''):'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">'+badgeFor(p)+'</span>'+(p.status!=="sold"?'<button type="button" class="quick-add" data-quick-id="'+id+'">+ QUICK ADD</button>':'')+'</div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p>'+(p.status!=="sold"&&Number(p.stock??1)===1?'<small class="one-left">ONLY 1 AVAILABLE</small>':'')+'</div></article>';
  }).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
+ renderSoldArchive();
 }
 
 function updateFavUI(){
