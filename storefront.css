@@ -261,3 +261,8 @@ body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:v
  .nd-store .store-footer nav{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:16px}
 }
 @media(prefers-reduced-motion:reduce){.nd-store .cart,.nd-store .product-image img{transition:none}.nd-store .filter-panel.open{animation:none}}
+
+.nd-store .nd-mobile-nav a,.nd-store .nd-mobile-nav button{position:relative}
+.nd-store .nd-nav-count{position:absolute;top:1px;left:calc(50% + 5px);min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border-radius:9px;background:#fff0ef;color:#c32a2a;font-size:11px;line-height:1;font-weight:800;border:1px solid #f1cecb}
+.nd-store .nd-nav-count[hidden]{display:none}
+.nd-store #cartCount,.nd-store #headerFavCount{background:#fff0ef;color:#c32a2a}

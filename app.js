@@ -14,7 +14,7 @@ const imagesFor=p=>{const xs=Array.isArray(p.images)?p.images:(typeof p.images==
 
 
 const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
-const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
+const save=()=>{localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));dispatchEvent(new Event("nd-counts-change"))};
 
 function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+(Number(p.oldPrice)>Number(p.price)?'<s style="font-weight:400;color:#777;margin-right:6px">'+euro(Number(p.oldPrice))+'</s>':'')+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
 
@@ -38,7 +38,7 @@ function renderProducts(){
  document.getElementById("products").innerHTML=list.map(p=>{
   const id=Number(p.id),fav=favorites.includes(id);
   const imgs=imagesFor(p),second=imgs[1]||"";
-  return '<article class="product" data-id="'+id+'" style="position:relative"><button type="button" class="fav" data-fav-id="'+id+'" aria-label="Favorit" aria-pressed="'+fav+'">'+(fav?'♥':'♡')+'</button><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgs[0]?'<img class="product-primary" loading="lazy" src="'+imgs[0]+'" alt="">'+(second?'<img class="product-secondary" loading="lazy" src="'+second+'" alt="">':''):'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">'+(p.status==='sold'?'SOLD':Number(p.oldPrice)>Number(p.price)?'SALE':'')+'</span>'+(p.status!=="sold"?'<button type="button" class="quick-add" data-quick-id="'+id+'">+ QUICK ADD</button>':'')+'</div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>';
+  return '<article class="product" data-id="'+id+'" style="position:relative"><button type="button" class="fav" data-fav-id="'+id+'" aria-label="Favorit" aria-pressed="'+fav+'">'+(fav?'♥':'♡')+'</button><div class="product-image '+(p.cls||'p1')+' '+(p.status==="sold"?'sold':'')+'">'+(imgs[0]?'<img class="product-primary" loading="lazy" src="'+imgs[0]+'" alt="">'+(second?'<img class="product-secondary" loading="lazy" src="'+second+'" alt="">':''):'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">'+(p.status==='sold'?'SOLD':Number(p.oldPrice)>Number(p.price)?'SALE':'')+'</span>'+'</div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>';
  }).join("")||'<div class="empty">Keine passenden Pieces gefunden.</div>';
  renderSoldArchive();
 }
@@ -56,7 +56,7 @@ function toggleFav(id){
  favorites=favorites.map(Number).filter(Number.isFinite);
  const adding=!favorites.includes(id);favorites=adding?favorites.concat(id):favorites.filter(x=>x!==id);if(adding)fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:id,type:"favorite"})}).catch(()=>{});
  favorites=[...new Set(favorites)];
- localStorage.setItem("nd-vintage-favorites-v2",JSON.stringify(favorites));
+ localStorage.setItem("nd-vintage-favorites-v2",JSON.stringify(favorites));dispatchEvent(new Event("nd-counts-change"));
  renderProducts();updateFavUI();
 }
 window.toggleFav=toggleFav;
@@ -105,7 +105,6 @@ function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");retur
 document.getElementById("products").addEventListener("click",e=>{
  const fav=e.target.closest("[data-fav-id]");
  if(fav){e.preventDefault();e.stopPropagation();toggleFav(Number(fav.dataset.favId));return;}
- const quick=e.target.closest("[data-quick-id]");if(quick){e.preventDefault();e.stopPropagation();addToCart(Number(quick.dataset.quickId));openCart();return;}
  const card=e.target.closest(".product[data-id]");
  if(card)openProduct(Number(card.dataset.id));
 });

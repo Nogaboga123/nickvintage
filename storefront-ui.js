@@ -44,3 +44,20 @@ function refineFooter(){
  const sync=()=>main.querySelectorAll(".footer-group").forEach(d=>{d.open=!small.matches});sync();small.addEventListener("change",sync);
 }
 refineMobileNavigation();refineFooter();
+
+function updateNavigationCounts(){
+ const read=key=>{try{const value=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(value)?value:[]}catch{return []}};
+ const favorites=new Set(read("nd-vintage-favorites-v2").map(Number).filter(Number.isFinite)).size;
+ const cart=read("nd-vintage-cart").reduce((sum,item)=>sum+Math.max(0,Math.floor(Number(item.qty)||0)),0);
+ const controls=document.querySelectorAll(".nd-mobile-nav a,.nd-mobile-nav button");
+ [["Favoriten",favorites,controls[2]],["Warenkorb",cart,controls[3]]].forEach(([label,count,control])=>{
+ if(!control)return;
+ let badge=control.querySelector(".nd-nav-count");if(!badge){badge=document.createElement("b");badge.className="nd-nav-count";badge.setAttribute("aria-hidden","true");control.appendChild(badge)}
+ badge.textContent=count;badge.hidden=count===0;control.setAttribute("aria-label",label+(count?" ("+count+")":""));
+ });
+}
+updateNavigationCounts();
+addEventListener("nd-counts-change",updateNavigationCounts);
+addEventListener("storage",updateNavigationCounts);
+addEventListener("pageshow",updateNavigationCounts);
+document.addEventListener("click",()=>setTimeout(updateNavigationCounts,0));
