@@ -1,3 +1,4 @@
+let trendingIds=new Set();
 let products=[
 {id:1,name:"Nike Tech Tracksuit — Black",cat:"Tracksuits",size:"L",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p1",new:true,status:"available"},
 {id:2,name:"Nike Tech Tracksuit — Grey",cat:"Tracksuits",size:"M",price:119.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p2",new:true,status:"available"},
@@ -28,7 +29,7 @@ const imageMap={
 };
 const imgFor=p=>p.image||imageMap[p.id]||"";
 const isFreshDrop=p=>{const t=new Date(p.publishAt||p.createdAt||0).getTime();return Number.isFinite(t)&&t>0&&Date.now()>=t&&Date.now()-t<=24*60*60*1000};
-const badgeFor=p=>p.status==="sold"?"SOLD":(isFreshDrop(p)?"NEW DROP":(p.new?"NEW":p.tag));
+const badgeFor=p=>p.status==="sold"?"SOLD":(trendingIds.has(Number(p.id))?"TRENDING":(isFreshDrop(p)?"NEW DROP":(p.new?"NEW":p.tag)));
 const imagesFor=p=>{const xs=Array.isArray(p.images)?p.images:(typeof p.images==="string"?p.images.split(/\n|,/):[]);return [...new Set([imgFor(p),...xs].map(x=>String(x||"").trim()).filter(Boolean))]};
 
 
@@ -166,4 +167,4 @@ function fillAdvancedFilters(){const brand=document.getElementById("brandFilter"
 ["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderProducts));
 document.getElementById("resetFilters")?.addEventListener("click",()=>{["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id).value="");activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()});
 fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI();
-(async()=>{try{const r=await fetch("/api/products");if(r.ok){products=await r.json();fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI();}}catch(e){console.error(e)}})();
+(async()=>{try{const [r,t]=await Promise.all([fetch("/api/products"),fetch("/api/trending")]);if(r.ok)products=await r.json();if(t.ok){const ts=await t.json();trendingIds=new Set(ts.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)))}fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI()}catch(e){console.error(e)}})();
