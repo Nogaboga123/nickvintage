@@ -13,6 +13,7 @@ let products=[
 let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
 let discountCode=localStorage.getItem("nd-vintage-discount")||"";
+let publicSettings={shipping:{DE:4.99,AT:8.99,CH:12.99,freeFrom:100}};
 let favorites=(()=>{try{const v=JSON.parse(localStorage.getItem("nd-vintage-favorites-v2")||"[]");return Array.isArray(v)?[...new Set(v.map(Number).filter(Number.isFinite))]:[]}catch{return []}})();
 
 const imageMap={
@@ -85,11 +86,11 @@ function updateCart(){
  document.getElementById("cartCount").textContent=count;
  const el=document.getElementById("cartItems");
  const valid=cart.map(i=>({i,p:products.find(x=>Number(x.id)===Number(i.id))})).filter(x=>x.p);
- const total=valid.reduce((s,x)=>s+Number(x.p.price)*x.i.qty,0),goal=100,remaining=Math.max(0,goal-total),pct=Math.min(100,total/goal*100);
+ const total=valid.reduce((s,x)=>s+Number(x.p.price)*x.i.qty,0),goal=Math.max(0,Number(publicSettings.shipping?.freeFrom??100)),remaining=Math.max(0,goal-total),pct=goal>0?Math.min(100,total/goal*100):100;
  const progressText=document.getElementById("shippingProgressText"),progressBar=document.getElementById("shippingProgressBar");
  if(progressText)progressText.textContent=remaining>0?"Noch "+euro(remaining)+" bis kostenloser Versand":"✓ Kostenloser Versand erreicht";
  if(progressBar)progressBar.style.width=pct+"%";
- const shipNote=document.getElementById("cartShippingNote");if(shipNote)shipNote.textContent=remaining<=0?"Kostenloser Versand für diesen Warenkorb.":"Kostenloser Versand ab 100 €.";
+ const shipNote=document.getElementById("cartShippingNote");if(shipNote)shipNote.textContent=remaining<=0?"Kostenloser Versand für diesen Warenkorb.":"Kostenloser Versand ab "+euro(goal)+".";
  if(!cart.length){el.innerHTML='<div class="empty"><b>Dein Warenkorb ist leer.</b><br><span>Entdecke deine nächsten Vintage Pieces.</span></div>';document.getElementById("subtotal").textContent=euro(0);return;}
  el.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="cart-item"><div class="cart-thumb ${p.cls}">${imgFor(p)?`<img loading="lazy" src="${imgFor(p)}" alt="">`:`${p.code}`}</div><div><h4>${p.name}</h4><p>${p.size} · ${euro(p.price)}</p><div class="qty"><button onclick="changeQty(${p.id},-1)" aria-label="Menge verringern">−</button><span>${i.qty}</span><button onclick="changeQty(${p.id},1)" aria-label="Menge erhöhen">+</button></div><button class="cart-remove" onclick="removeItem(${p.id})">Artikel entfernen</button></div><b>${euro(p.price*i.qty)}</b></div>`}).join("");
  document.getElementById("subtotal").textContent=euro(total);
@@ -114,7 +115,9 @@ function renderCheckout(){
  cart=cart.filter(i=>products.some(p=>Number(p.id)===Number(i.id)&&p.status!=="sold"));save();
  if(!cart.length){items.innerHTML='<p class="payment-note">Keine Artikel.</p>';document.getElementById("checkoutTotal").textContent=euro(0);return}
  items.innerHTML=cart.map(i=>{const p=products.find(x=>x.id===i.id);return `<div class="summary-line"><span>${i.qty}× ${p.name}</span><b>${euro(p.price*i.qty)}</b></div>`}).join("");
- document.getElementById("checkoutTotal").textContent=euro(cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0));
+ const subtotal=cart.reduce((s,i)=>s+products.find(p=>p.id===i.id).price*i.qty,0),country=document.getElementById("shippingCountry")?.value||"DE",freeFrom=Math.max(0,Number(publicSettings.shipping?.freeFrom??100)),shipping=subtotal>=freeFrom?0:Math.max(0,Number(publicSettings.shipping?.[country]??publicSettings.shipping?.DE??4.99));
+ items.innerHTML+=`<div class="summary-line"><span>Versand (${country})</span><b>${shipping===0?"Kostenlos":euro(shipping)}</b></div>`;
+ document.getElementById("checkoutTotal").textContent=euro(subtotal+shipping);
 }
 function openCheckout(){if(!cart.length){alert("Dein Warenkorb ist leer.");return}renderCheckout();document.getElementById("checkoutModal").classList.add("open");closeCart()}
 document.getElementById("products").addEventListener("click",e=>{
@@ -144,17 +147,17 @@ document.getElementById("checkoutBtn").onclick=openCheckout;
 const discountInput=document.getElementById("discountCode"),discountMsg=document.getElementById("discountMsg");if(discountInput)discountInput.value=discountCode;document.getElementById("applyDiscount")?.addEventListener("click",()=>{discountCode=(discountInput?.value||"").trim().toUpperCase();if(!discountCode){localStorage.removeItem("nd-vintage-discount");if(discountMsg)discountMsg.textContent="Bitte einen Rabattcode eingeben.";return}localStorage.setItem("nd-vintage-discount",discountCode);if(discountMsg)discountMsg.textContent="Code übernommen – der Rabatt wird beim Checkout geprüft ✓";});
 document.querySelectorAll("[data-cat]").forEach(a=>a.onclick=()=>{activeFilter=a.dataset.cat;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===activeFilter));renderProducts()});
 document.getElementById("earlyForm").onsubmit=async e=>{e.preventDefault();const out=document.getElementById("earlyMsg"),email=document.getElementById("email").value.trim();out.textContent="Wird eingetragen…";try{const r=await fetch("/api/drop-alert",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Fehler");out.textContent="✓ Du bist beim Drop-Alert dabei.";e.target.reset()}catch(err){out.textContent=err.message}};
+document.getElementById("shippingCountry")?.addEventListener("change",renderCheckout);
 document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
  cart=cart.filter(x=>products.some(p=>Number(p.id)===Number(x.id)&&p.status!=="sold"&&Number(p.stock||0)>=Number(x.qty||1)));save();
  if(!cart.length){alert("Dein Warenkorb enthält keine verfügbaren Artikel mehr.");closeCheckout();updateCart();return}
  const btn=e.target.querySelector("button"); btn.disabled=true; btn.textContent="CHECKOUT WIRD GELADEN…";
  try{
-  fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:0,type:"checkout"})}).catch(()=>{});
   const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim(),discountCode,shippingCountry:document.getElementById("shippingCountry")?.value||"DE"})});
   const data=await r.json();
   if(!r.ok) throw new Error(data.error||"Checkout-Fehler");
-  if(data.url){location.href=data.url;return;}
+  if(data.url){fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:0,type:"checkout"})}).catch(()=>{});location.href=data.url;return;}
   throw new Error("Keine Checkout-URL erhalten.");
  }catch(err){
   alert(err.message);
@@ -170,4 +173,4 @@ function fillAdvancedFilters(){const brand=document.getElementById("brandFilter"
 ["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderProducts));
 document.getElementById("resetFilters")?.addEventListener("click",()=>{["brandFilter","sizeFilter","colorFilter","priceFilter","availabilityFilter"].forEach(id=>document.getElementById(id).value="");activeFilter="Alle";document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter==="Alle"));renderProducts()});
 fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI();
-(async()=>{try{const [r,t]=await Promise.all([fetch("/api/products"),fetch("/api/trending")]);if(r.ok)products=await r.json();if(t.ok){const ts=await t.json();trendingIds=new Set(ts.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)))}fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI()}catch(e){console.error(e)}})();
+(async()=>{try{const [r,t,cfg]=await Promise.all([fetch("/api/products"),fetch("/api/trending"),fetch("/api/public-settings")]);if(r.ok)products=await r.json();if(cfg.ok)publicSettings=await cfg.json();if(t.ok){const ts=await t.json();trendingIds=new Set(ts.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)))}fillAdvancedFilters();renderProducts();renderRecommendations();updateCart();updateFavUI()}catch(e){console.error(e)}})();
