@@ -61,12 +61,17 @@ const readSettings=()=>{
  const base=store.settings||localJson(settingsFile,{});
  runtimeSettings={
   ...base,
-  siteOpen:!!base.siteOpen,
+  siteOpen:base.siteOpen===true,
   earlyPasswordHash:process.env.EARLY_ACCESS_PASSWORD?hash(process.env.EARLY_ACCESS_PASSWORD):base.earlyPasswordHash
  };
  return runtimeSettings;
 };
-const writeSettings=s=>{runtimeSettings={...s};return persist("settings",runtimeSettings);};
+const writeSettings=async s=>{
+ const next={...s,siteOpen:s.siteOpen===true};
+ await persist("settings",next);
+ runtimeSettings=next;
+ return next;
+};
 const writeProducts=p=>persist("products",p);
 const readReturns=()=>store.returns||localJson(returnsFile,[]);
 const writeReturns=x=>persist("returns",x);
