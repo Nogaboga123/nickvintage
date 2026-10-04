@@ -61,3 +61,47 @@ addEventListener("nd-counts-change",updateNavigationCounts);
 addEventListener("storage",updateNavigationCounts);
 addEventListener("pageshow",updateNavigationCounts);
 document.addEventListener("click",()=>setTimeout(updateNavigationCounts,0));
+
+const ndPopularBrands=["Ralph Lauren","Nike","Adidas","Carhartt","The North Face","Tommy Hilfiger","Lacoste","Levi's"];
+const ndOtherBrands=["Armani","Asics","Barbour","Bershka","Burberry","Calvin Klein","Champion","Columbia","Converse","Dickies","Diesel","Ellesse","Fila","Fred Perry","Gant","Guess","H&M","Helly Hansen","Hugo Boss","Jordan","Kappa","Lee","Lonsdale","New Balance","Patagonia","Puma","Reebok","Russell Athletic","Stüssy","Supreme","Timberland","Umbro","Under Armour","Uniqlo","Vans","Wrangler","Zara"];
+const ndSizes=["XXS","XS","S","M","L","XL","XXL","XXXL","4XL","5XL","6XL","One Size",...Array.from({length:33},(_,i)=>String(32+i)),...Array.from({length:23},(_,i)=>"W"+(24+i))];
+function enhanceBrandFilter(select){
+ const wrapper=document.createElement("div");wrapper.className="brand-picker";
+ const toggle=document.createElement("button");toggle.type="button";toggle.className="brand-picker-toggle";toggle.setAttribute("aria-label","Marke auswählen");toggle.setAttribute("aria-expanded","false");toggle.textContent="Alle Marken";
+ const panel=document.createElement("div");panel.className="brand-picker-panel";panel.hidden=true;
+ const search=document.createElement("input");search.type="search";search.placeholder="Marke suchen …";search.setAttribute("aria-label","Marken durchsuchen");search.autocomplete="off";
+ const list=document.createElement("div");list.className="brand-picker-list";panel.append(search,list);wrapper.append(toggle,panel);select.after(wrapper);select.hidden=true;
+ let internal=false;
+ const populate=()=>{
+  if(internal)return;internal=true;
+  const selected=select.value,existing=[...select.options].filter(o=>o.value).map(o=>({value:o.value,label:o.textContent}));
+  const values=new Map(existing.map(o=>[o.label.toLocaleLowerCase("de"),o]));
+  [...ndPopularBrands,...ndOtherBrands].forEach(label=>{const key=label.toLocaleLowerCase("de");if(!values.has(key))values.set(key,{value:label,label})});
+  const all=[...values.values()];const options=[{value:"",label:"Alle Marken"},...all.sort((a,b)=>a.label.localeCompare(b.label,"de"))];
+  const signature=options.map(o=>o.value+"|"+o.label).join(";");
+  if([...select.options].map(o=>o.value+"|"+o.textContent).join(";")!==signature){select.replaceChildren(...options.map(o=>new Option(o.label,o.value)));select.value=selected;select.dataset.ndOptions=signature}
+  internal=false;render();
+ };
+ const choose=value=>{select.value=value;select.dispatchEvent(new Event("change",{bubbles:true}));panel.hidden=true;toggle.setAttribute("aria-expanded","false");render();toggle.focus()};
+ const render=()=>{
+  toggle.textContent=select.selectedOptions[0]?.textContent||"Alle Marken";list.replaceChildren();
+  const q=search.value.trim().toLocaleLowerCase("de"),options=[...select.options];
+  const add=option=>{const b=document.createElement("button");b.type="button";b.textContent=option.textContent;b.className="brand-choice";b.setAttribute("aria-pressed",String(select.value===option.value));b.onclick=()=>choose(option.value);list.appendChild(b)};
+  const visible=options.filter(o=>!q||o.textContent.toLocaleLowerCase("de").includes(q));
+  if(!q){add(options[0]);const heading=document.createElement("p");heading.className="brand-group-title";heading.textContent="Beliebte Marken";list.appendChild(heading);ndPopularBrands.forEach(name=>{const option=options.find(o=>o.textContent.toLocaleLowerCase("de")===name.toLocaleLowerCase("de"));if(option)add(option)});const other=document.createElement("p");other.className="brand-group-title";other.textContent="Weitere Marken";list.appendChild(other);visible.filter(o=>o.value&&!ndPopularBrands.some(n=>n.toLocaleLowerCase("de")===o.textContent.toLocaleLowerCase("de"))).forEach(add)}
+  else{visible.forEach(add);if(!visible.length){const text=document.createElement("p");text.textContent="Keine Marke gefunden.";list.appendChild(text)}}
+ };
+ toggle.onclick=()=>{panel.hidden=!panel.hidden;toggle.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){search.value="";render();search.focus()}};
+ search.addEventListener("input",render);
+ wrapper.addEventListener("keydown",e=>{if(e.key==="Escape"){panel.hidden=true;toggle.setAttribute("aria-expanded","false");toggle.focus()}});
+ document.addEventListener("click",e=>{if(!wrapper.contains(e.target)){panel.hidden=true;toggle.setAttribute("aria-expanded","false")}});
+ select.addEventListener("change",render);
+ new MutationObserver(()=>populate()).observe(select,{childList:true});
+ document.addEventListener("click",()=>setTimeout(render,0));
+ populate();
+}
+document.querySelectorAll("#categoryBrand,#brandFilter").forEach(enhanceBrandFilter);
+document.querySelectorAll("#categorySize,#sizeFilter").forEach(select=>{
+ const populate=()=>{const selected=select.value;const existing=[...select.options].filter(o=>o.value).map(o=>o.value);const values=[...new Set([...ndSizes,...existing])];const signature=values.join(";");if([...select.options].filter(o=>o.value).map(o=>o.value).join(";")===signature)return;select.dataset.ndSizes=signature;select.replaceChildren(new Option("Alle Größen",""),...values.map(x=>new Option(x,x)));select.value=selected};
+ new MutationObserver(populate).observe(select,{childList:true});populate();
+});
