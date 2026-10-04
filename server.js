@@ -66,7 +66,7 @@ const readSettings=()=>{
  };
  return runtimeSettings;
 };
-const writeSettings=s=>{runtimeSettings={...s};persist("settings",runtimeSettings);};
+const writeSettings=s=>{runtimeSettings={...s};return persist("settings",runtimeSettings);};
 const writeProducts=p=>persist("products",p);
 const readReturns=()=>store.returns||localJson(returnsFile,[]);
 const writeReturns=x=>persist("returns",x);
@@ -156,7 +156,7 @@ function auth(req,res,next){
 }
 app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100}})});
 app.get("/api/site-settings",auth,(req,res)=>{const x=readSettings();res.json({siteOpen:!!x.siteOpen,dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100},discount:x.discount||{code:"",percent:0,active:false}})});
-app.put("/api/site-settings",auth,(req,res)=>{
+app.put("/api/site-settings",auth,async(req,res)=>{
  const cur={...readSettings()}, body=req.body||{};
  if(typeof body.siteOpen==="boolean")cur.siteOpen=body.siteOpen;
  if(typeof body.dropName==="string")cur.dropName=body.dropName.trim().slice(0,60);
@@ -167,7 +167,7 @@ app.put("/api/site-settings",auth,(req,res)=>{
   }
   cur.earlyPasswordHash=hash(body.earlyPassword.trim());
  }
- writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||"",shipping:cur.shipping,discount:cur.discount});
+ await writeSettings(cur); res.json({siteOpen:cur.siteOpen,dropName:cur.dropName||"DROP 01",dropDate:cur.dropDate||"",shipping:cur.shipping,discount:cur.discount});
 });
 
 app.post("/api/drop-alert",(req,res)=>{const email=String(req.body?.email||"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Bitte eine gültige E-Mail eingeben."});const list=readSubscribers();if(!list.some(x=>x.email===email)){list.unshift({email,createdAt:new Date().toISOString()});writeSubscribers(list)}res.status(201).json({ok:true,message:"Du bist beim Drop-Alert dabei."})});
@@ -212,12 +212,12 @@ app.put("/api/admin/orders/:id",auth,(req,res)=>{
  writeOrders(list);res.json(list[i]);
 });
 app.get("/api/admin/returns",auth,(_req,res)=>res.json(readReturns()));
-app.put("/api/admin/returns/:id",auth,(req,res)=>{
+app.put("/api/admin/returns/:id",auth,async(req,res)=>{
  const list=readReturns(), i=list.findIndex(x=>x.id===req.params.id);
  if(i<0)return res.status(404).json({error:"Retoure nicht gefunden"});
  const allowed=["Neu","In Prüfung","Genehmigt","Erledigt"];
  if(allowed.includes(req.body?.status))list[i].status=req.body.status;
- writeReturns(list);res.json(list[i]);
+ await writeReturns(list);res.json(list[i]);
 });
 
 const upload=multer({storage:multer.diskStorage({
@@ -253,20 +253,20 @@ app.post("/api/admin/logout",(req,res)=>{
  res.clearCookie("nv_admin",{path:"/api/admin",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
  res.json({ok:true});
 });
-app.post("/api/admin/products",auth,(req,res)=>{
+app.post("/api/admin/products",auth,async(req,res)=>{
  const p=readProducts();
  const body=req.body||{};
  const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;
  const image=String(body.image||"");const images=Array.isArray(body.images)?body.images.map(String).filter(Boolean):[];
  const item={id,name:String(body.name||"Neues Produkt"),price:Number(body.price)||0,oldPrice:Math.max(0,Number(body.oldPrice)||0),createdAt:new Date().toISOString(),cat:String(body.cat||"Sonstiges"),size:String(body.size||""),condition:String(body.condition||"Sehr gut"),tag:String(body.tag||"VINTAGE"),code:String(body.code||"NV"),color:String(body.color||""),material:String(body.material||""),description:String(body.description||""),drop:String(body.drop||"").trim().slice(0,60),purchasePrice:Math.max(0,Number(body.purchasePrice)||0),publishAt:String(body.publishAt||""),chest:Number(body.chest)||null,length:Number(body.length)||null,waist:Number(body.waist)||null,inseam:Number(body.inseam)||null,legOpening:Number(body.legOpening)||null,stock:Math.max(0,Number(body.stock)||0),image,images:images.length?images:(image?[image]:[]),new:!!body.new,status:(Math.max(0,Number(body.stock)||0)>0?"available":"sold")};
- p.push(item);writeProducts(p);res.status(201).json(item);
+ p.push(item);await writeProducts(p);res.status(201).json(item);
 });
-app.put("/api/admin/products/:id",auth,(req,res)=>{
+app.put("/api/admin/products/:id",auth,async(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const i=p.findIndex(x=>x.id===id);
  if(i<0)return res.status(404).json({error:"Produkt nicht gefunden"});
- p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);writeProducts(p);res.json(p[i]);
+ p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);await writeProducts(p);res.json(p[i]);
 });
-app.post("/api/admin/products/:id/duplicate",auth,(req,res)=>{const p=readProducts(),src=p.find(x=>Number(x.id)===Number(req.params.id));if(!src)return res.status(404).json({error:"Produkt nicht gefunden"});const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;const copy={...src,id,name:src.name+" – Kopie",hidden:true,status:(Number(src.stock||0)>0?"available":"sold")};p.push(copy);writeProducts(p);res.status(201).json(copy)});
+app.post("/api/admin/products/:id/duplicate",auth,async(req,res)=>{const p=readProducts(),src=p.find(x=>Number(x.id)===Number(req.params.id));if(!src)return res.status(404).json({error:"Produkt nicht gefunden"});const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;const copy={...src,id,name:src.name+" – Kopie",hidden:true,status:(Number(src.stock||0)>0?"available":"sold")};p.push(copy);await writeProducts(p);res.status(201).json(copy)});
 app.delete("/api/admin/products/:id",auth,async(req,res)=>{
  try{
   const p=readProducts(),id=Number(req.params.id),item=p.find(x=>Number(x.id)===id);
