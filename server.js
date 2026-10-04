@@ -61,7 +61,7 @@ const readSettings=()=>{
  const base=store.settings||localJson(settingsFile,{});
  runtimeSettings={
   ...base,
-  siteOpen:process.env.SITE_OPEN==="true"?true:process.env.SITE_OPEN==="false"?false:base.siteOpen,
+  siteOpen:!!base.siteOpen,
   earlyPasswordHash:process.env.EARLY_ACCESS_PASSWORD?hash(process.env.EARLY_ACCESS_PASSWORD):base.earlyPasswordHash
  };
  return runtimeSettings;
@@ -137,7 +137,7 @@ app.get("/produkt.html",(req,res,next)=>{
   const desc=(String(p.description||"").trim()||String(p.name||"Vintage Piece")+" – Vintage "+String(p.cat||"Streetwear")+" in Größe "+String(p.size||"—")+", Zustand "+String(p.condition||"Vintage Piece")+".")+" Preis: "+price.toLocaleString("de-DE",{style:"currency",currency:"EUR"})+".";
   const availability=(p.status==="sold"||Number(p.stock||0)<=0)?"https://schema.org/OutOfStock":"https://schema.org/InStock";
   const productJson=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:String(p.name||"Vintage Piece"),description:desc,image:[image],sku:"ND-"+id,brand:{"@type":"Brand",name:String(p.code||p.tag||"N&D VINTAGE")},itemCondition:"https://schema.org/UsedCondition",offers:{"@type":"Offer",url:pageUrl,priceCurrency:"EUR",price:price.toFixed(2),availability,itemCondition:"https://schema.org/UsedCondition",seller:{"@type":"Organization",name:"N&D VINTAGE"}}}).replace(/</g,"\\u003c");
-  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta property="product:price:amount" content="'+escMeta(price.toFixed(2))+'"><meta property="product:price:currency" content="EUR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'"><script type="application/ld+json">'+productJson+'<\\/script>';
+  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta property="product:price:amount" content="'+escMeta(price.toFixed(2))+'"><meta property="product:price:currency" content="EUR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'"><script type="application/ld+json">'+productJson+'</script>';
   res.type("html").send(file.replace("<title>Produkt — N&D VINTAGE</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
