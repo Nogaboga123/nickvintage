@@ -95,11 +95,12 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
    const orders=readOrders();
    if(!orders.some(o=>o.stripeSessionId===id)){
     const parsed=String(s.metadata?.items||"").split(",").filter(Boolean).map(v=>{const [pid,qty]=v.split("x").map(Number);return {id:pid,qty}});
-    const db=readProducts(), orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:p.price,purchasePrice:Number(p.purchasePrice||0),qty:x.qty}:null}).filter(Boolean);
+    const db=readProducts(),discountCode=String(s.metadata?.discountCode||""),cfg=readSettings(),discount=cfg.discount||{},discountPercent=discountCode&&discount.active&&discountCode===String(discount.code||"").trim().toUpperCase()?Math.max(0,Math.min(99,Number(discount.percent)||0)):0,factor=1-discountPercent/100,orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:Number(p.price),chargedUnitPrice:Math.round(Number(p.price)*factor*100)/100,purchasePrice:Number(p.purchasePrice||0),qty:x.qty}:null}).filter(Boolean);
     for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
     await writeProducts(db);
     const aa=readAnalytics();for(const x of parsed){const k=String(x.id);aa[k]=aa[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};aa[k].purchases=(aa[k].purchases||0)+Number(x.qty||1);aa[k].events=Array.isArray(aa[k].events)?aa[k].events:[];aa[k].events.push({type:"purchase",at:new Date().toISOString()})}await writeAnalytics(aa);
-    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,total:Number(s.amount_total||0)/100,status:"Bezahlt",tracking:"",carrier:"",test:s.livemode===false,createdAt:new Date().toISOString()});
+    const itemsTotal=Math.round(orderItems.reduce((sum,x)=>sum+Number(x.chargedUnitPrice||x.price)*Number(x.qty||1),0)*100)/100,total=Math.round(Number(s.amount_total||0))/100;
+    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"",test:s.livemode===false,createdAt:new Date().toISOString()});
     await writeOrders(orders);
    }
   }
@@ -296,7 +297,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
    line_items,
    shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser Versand":"Standardversand "+country}}],
    customer_email:customerEmail||undefined,
-   metadata:{items:itemMeta},
+   metadata:{items:itemMeta,discountCode:code||"",shippingCountry:country},
    success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
    cancel_url:publicBaseUrl+"/?checkout=cancelled"
   });
