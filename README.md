@@ -1,4 +1,4 @@
-# NickVintage
+# N best of vintage
 
 Eine eigenständige Vintage-Shop-Frontend-Basis mit:
 - responsivem Design
@@ -11,7 +11,7 @@ Eine eigenständige Vintage-Shop-Frontend-Basis mit:
 - Early-Access-Form
 - Drop-Countdown
 - mobiler Navigation
-- eigenen NickVintage-Texten und Branding
+- eigenen N best of vintage-Texten und Branding
 
 ## Start
 Einfach `index.html` im Browser öffnen.

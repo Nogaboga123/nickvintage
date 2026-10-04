@@ -2,7 +2,7 @@
 /* Cleaner cart controls */
 .cart-item{position:relative;padding-bottom:18px}.cart-item>b{align-self:start}.qty{margin-top:9px}.cart-remove{border:0;background:transparent;padding:0;margin-top:9px;color:#777;text-decoration:underline;text-underline-offset:3px;font-size:9px;cursor:pointer}.cart-remove:hover{color:#111}.remove{display:none}
 
-/* --- NickVintage clean premium UI refresh --- */
+/* --- N best of vintage clean premium UI refresh --- */
 :root{--nv-bg:#f7f6f2;--nv-paper:#fff;--nv-ink:#111;--nv-muted:#73736e;--nv-line:#deddd7;--nv-dark:#141414;--nv-radius:2px}
 body{background:var(--nv-bg);color:var(--nv-ink);-webkit-font-smoothing:antialiased}
 ::selection{background:#111;color:#fff}

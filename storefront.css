@@ -1,5 +1,5 @@
 
-/* N&D Vintage: shared customer-facing layout, loaded after page styles. */
+/* N best of vintage: shared customer-facing layout, loaded after page styles. */
 body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:var(--nd-paper);color:#20251f;font-family:Inter,Arial,sans-serif}
 .nd-store .site-header{background:#fff;border-bottom:1px solid var(--nd-line);height:76px;padding:0 max(20px,calc((100vw - 1320px)/2));box-shadow:0 2px 12px #00000004;backdrop-filter:none}
 .nd-store .logo{letter-spacing:-.04em;font-size:21px;color:var(--nd-ink)}
@@ -310,3 +310,8 @@ body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:v
  .nd-store .category-filters .searchable-filter .brand-picker-panel{width:min(300px,calc(100vw - 48px))}
  .nd-store .category-filters label:nth-child(2) .brand-picker-panel{left:auto;right:0}
 }
+
+/* Updated shop wordmark. */
+.nd-store .site-header .logo{font-size:20px;white-space:nowrap}
+.nd-store .logo span{font-weight:500}
+@media(max-width:680px){.nd-store .site-header .logo{font-size:20px;white-space:normal;line-height:1.1;max-width:135px}.nd-store .site-header .logo span{display:block;font-size:12px;letter-spacing:-.02em}.nd-store .site-header:not(:has(.header-actions)) .logo{max-width:none}.nd-store .footer-main .logo{font-size:20px}}
