@@ -193,7 +193,7 @@ app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)
  res.redirect("/");
 });
 function auth(req,res,next){
- const token=req.cookies?.nv_admin;
+ const token=req.cookies?.nv_admin_session||req.cookies?.nv_admin;
  const expires=token?(sessions.get(token)||store.adminSessions?.[hash(token)]):0;
  if(!token||!expires||expires<=Date.now()){
   if(token)sessions.delete(token);
@@ -294,14 +294,18 @@ app.post("/api/admin/login",async(req,res)=>{
   durableSessions[hash(token)]=expiry;
   await persist("adminSessions",durableSessions);
   sessions.set(token,expiry);
-  res.cookie("nv_admin",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api"});
+  res.clearCookie("nv_admin",{path:"/"});
+  res.clearCookie("nv_admin",{path:"/api"});
+  res.cookie("nv_admin_session",token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:12*60*60*1000,path:"/api"});
   res.json({ok:true});
  }catch(e){res.status(500).json({error:"Login-Fehler"})}
 });
 app.post("/api/admin/logout",async(req,res)=>{
- const token=req.cookies?.nv_admin;
+ const token=req.cookies?.nv_admin_session||req.cookies?.nv_admin;
  if(token){sessions.delete(token);const durableSessions={...(store.adminSessions||{})};delete durableSessions[hash(token)];await persist("adminSessions",durableSessions);}
  res.clearCookie("nv_admin",{path:"/api",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
+ res.clearCookie("nv_admin",{path:"/"});
+ res.clearCookie("nv_admin_session",{path:"/api",sameSite:"strict",secure:process.env.NODE_ENV==="production"});
  res.json({ok:true});
 });
 app.post("/api/admin/products",auth,async(req,res)=>{
