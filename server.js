@@ -8,6 +8,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import cookieParser from "cookie-parser";
 import multer from "multer";
+import pg from "pg";
 import { fileURLToPath } from "url";
 
 const app=express();
@@ -43,7 +44,7 @@ const productDefaults={
 9:{name:"Nike Tech Fleece Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/cc350337-a9f2-453d-af2d-e007a3d8bc28/M+NK+TCH+FLC+ERGO+FZ.png",new:true},
 10:{name:"Nike Tech Fleece Jogger — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/9b3adca5-2ea6-42f1-9eea-87da2804e175/M+NK+TCH+FLC+ERGO+FZ.png",new:true}
 };
-const readProducts=()=>{const saved=JSON.parse(fs.readFileSync(dbFile,"utf8"));const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
+const {Pool}=pg;\nconst pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}}):null;\nconst store={};\nconst persist=(key,value)=>{store[key]=value;if(pool)pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]).catch(e=>console.error("DB speichern "+key+":",e.message));};\nconst localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};\nconst readProducts=()=>{const saved=store.products||localJson(dbFile,[]);const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
@@ -52,7 +53,7 @@ if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
 let runtimeSettings=null;
 const readSettings=()=>{
  if(runtimeSettings)return runtimeSettings;
- const base=JSON.parse(fs.readFileSync(settingsFile,"utf8"));
+ const base=store.settings||localJson(settingsFile,{});
  runtimeSettings={
   ...base,
   siteOpen:process.env.SITE_OPEN==="true"?true:process.env.SITE_OPEN==="false"?false:base.siteOpen,
@@ -292,4 +293,17 @@ app.post("/api/create-checkout-session",async(req,res)=>{
 app.get("/robots.txt",(_req,res)=>res.type("text/plain").send("User-agent: *\nAllow: /\nSitemap: "+publicBaseUrl+"/sitemap.xml\n"));
 app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html","/suche.html",...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+publicBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
-app.listen(process.env.PORT||4242,()=>console.log("N&D VINTAGE läuft auf http://localhost:"+(process.env.PORT||4242)));
+async function start(){
+ if(pool){
+  try{
+   const {rows}=await pool.query("SELECT key,value FROM shop_data WHERE key = ANY($1)",[["products","settings","returns","orders","subscribers","analytics"]]);
+   for(const row of rows)store[row.key]=row.value;
+   const seeds={products:localJson(dbFile,[]),settings:localJson(settingsFile,{}),returns:localJson(returnsFile,[]),orders:localJson(ordersFile,[]),subscribers:localJson(subscribersFile,[]),analytics:localJson(analyticsFile,{})};
+   for(const [key,value] of Object.entries(seeds))if(!(key in store)){await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO NOTHING",[key,JSON.stringify(value)]);store[key]=value}
+   runtimeSettings=null;
+   console.log("Neon-Datenbank verbunden.");
+  }catch(e){console.error("Neon Startfehler:",e.message);process.exit(1)}
+ }else console.warn("DATABASE_URL fehlt - lokale JSON-Daten werden verwendet.");
+ app.listen(process.env.PORT||4242,()=>console.log("N&D VINTAGE läuft auf http://localhost:"+(process.env.PORT||4242)));
+}
+start();
