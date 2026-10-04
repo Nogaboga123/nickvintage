@@ -49,7 +49,7 @@ const pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATAB
 const store={};
 const persist=async(key,value)=>{store[key]=value;if(pool)await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]);};
 const localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};
-const readProducts=()=>{const saved=store.products||localJson(dbFile,[]);const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
+const readProducts=()=>{const saved=store.products||localJson(dbFile,[]);return saved.map(p=>{const def=productDefaults[Number(p.id)]||{};return {...def,...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:(def.images||[]),stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
