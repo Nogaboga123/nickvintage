@@ -29,14 +29,14 @@ const imageMap={
 };
 const imgFor=p=>p.image||imageMap[p.id]||"";
 const isFreshDrop=p=>{const t=new Date(p.publishAt||p.createdAt||0).getTime();return Number.isFinite(t)&&t>0&&Date.now()>=t&&Date.now()-t<=24*60*60*1000};
-const badgeFor=p=>p.status==="sold"?"SOLD":(trendingIds.has(Number(p.id))?"TRENDING":(isFreshDrop(p)?"NEW DROP":(p.new?"NEW":p.tag)));
+const badgeFor=p=>p.status==="sold"?"SOLD":(Number(p.oldPrice)>Number(p.price)?"SALE":(trendingIds.has(Number(p.id))?"TRENDING":(isFreshDrop(p)?"NEW DROP":(p.new?"NEW":p.tag))));
 const imagesFor=p=>{const xs=Array.isArray(p.images)?p.images:(typeof p.images==="string"?p.images.split(/\n|,/):[]);return [...new Set([imgFor(p),...xs].map(x=>String(x||"").trim()).filter(Boolean))]};
 
 
 const euro=n=>n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 const save=()=>localStorage.setItem("nd-vintage-cart",JSON.stringify(cart));
 
-function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
+function renderSoldArchive(){const box=document.getElementById("soldProducts"),section=document.getElementById("soldArchive"),total=document.getElementById("soldTotal");if(!box||!section)return;const sold=products.filter(p=>!p.hidden&&p.status==="sold").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));section.style.display=sold.length?"":"none";if(total)total.textContent=sold.length+" SOLD";box.innerHTML=sold.map(p=>{const im=imgFor(p);return '<article class="product" data-id="'+Number(p.id)+'"><div class="product-image '+(p.cls||"p1")+' sold">'+(im?'<img loading="lazy" src="'+im+'" alt="">':'<div class="fake-photo">'+p.code+'</div>')+'<span class="badge">SOLD</span></div><div class="product-info"><div class="product-name-row"><h3>'+p.name+'</h3><b>'+(Number(p.oldPrice)>Number(p.price)?'<s style="font-weight:400;color:#777;margin-right:6px">'+euro(Number(p.oldPrice))+'</s>':'')+euro(p.price)+'</b></div><p>SIZE '+p.size+' · '+p.condition+'</p></div></article>'}).join("");box.querySelectorAll(".product").forEach(card=>card.addEventListener("click",()=>openProduct(Number(card.dataset.id))))}
 
 function renderProducts(){
  let list=products.filter(p=>!p.hidden&&p.status!=="sold"&&(activeFilter==="Alle"||p.cat===activeFilter));
