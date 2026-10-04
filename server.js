@@ -141,6 +141,20 @@ app.get("/produkt.html",(req,res,next)=>{
   res.type("html").send(file.replace(/<title>[^<]*<\\/title>/i,"").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
+app.get("/kategorie.html",(req,res,next)=>{
+ const categories={tracksuits:"Tracksuits",trackpants:"Trackpants",jacken:"Jacken",hoodies:"Hoodies",sweater:"Sweater",jeans:"Jeans",shirts:"Shirts"};
+ const key=String(req.query.cat||"tracksuits").toLowerCase(),cat=categories[key];
+ if(!cat)return next();
+ try{
+  const file=fs.readFileSync(path.join(__dirname,"kategorie.html"),"utf8");
+  const escMeta=v=>String(v??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const base=(process.env.PUBLIC_URL||"https://nickvintage.onrender.com").replace(/\/$/,""),pageUrl=base+"/kategorie.html?cat="+encodeURIComponent(key);
+  const title=cat+" Vintage kaufen | N&D VINTAGE";
+  const desc="Entdecke ausgewählte Vintage "+cat+" bei N&D VINTAGE. Kuratierte Streetwear, Einzelstücke, transparente Zustandsangaben und Maße.";
+  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="website"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+base+'/nd-vintage-social-share.jpg"><meta name="twitter:card" content="summary_large_image">';
+  res.type("html").send(file.replace(/<title>[^<]*<\\/title>/i,"").replace("</head>",meta+"</head>"));
+ }catch(e){next(e)}
+});
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const ok=hash(req.body?.password||"")===readSettings().earlyPasswordHash;
@@ -312,7 +326,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
 app.get("/robots.txt",(_req,res)=>res.type("text/plain").send("User-agent: *\nAllow: /\nSitemap: "+publicBaseUrl+"/sitemap.xml\n"));
-app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+publicBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
+app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...["tracksuits","trackpants","jacken","hoodies","sweater","jeans","shirts"].map(cat=>"/kategorie.html?cat="+cat),...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+publicBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
 async function start(){
  if(pool){
