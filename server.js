@@ -44,7 +44,12 @@ const productDefaults={
 9:{name:"Nike Tech Fleece Hoodie — Grey",cat:"Hoodies",size:"M",price:69.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/cc350337-a9f2-453d-af2d-e007a3d8bc28/M+NK+TCH+FLC+ERGO+FZ.png",new:true},
 10:{name:"Nike Tech Fleece Jogger — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",image:"https://static.nike.com/a/images/q_auto:eco/t_product_v1/f_auto/dpr_1.0/h_386,c_limit/u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/9b3adca5-2ea6-42f1-9eea-87da2804e175/M+NK+TCH+FLC+ERGO+FZ.png",new:true}
 };
-const {Pool}=pg;\nconst pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}}):null;\nconst store={};\nconst persist=(key,value)=>{store[key]=value;if(pool)pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]).catch(e=>console.error("DB speichern "+key+":",e.message));};\nconst localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};\nconst readProducts=()=>{const saved=store.products||localJson(dbFile,[]);const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
+const {Pool}=pg;
+const pool=process.env.DATABASE_URL?new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}}):null;
+const store={};
+const persist=(key,value)=>{store[key]=value;if(pool)pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()",[key,JSON.stringify(value)]).catch(e=>console.error("DB speichern "+key+":",e.message));};
+const localJson=(file,fallback)=>{try{return JSON.parse(fs.readFileSync(file,"utf8"))}catch{return fallback}};
+const readProducts=()=>{const saved=store.products||localJson(dbFile,[]);const base=Object.entries(productDefaults).map(([id,def])=>{const p=saved.find(x=>Number(x.id)===Number(id))||{};return {id:Number(id),...def,...p,images:(Array.isArray(p.images)&&p.images.length?p.images:def.images)||[],stock:p.stock??def.stock??1,status:p.status||def.status||"available"};});const ids=new Set(base.map(p=>Number(p.id)));const extra=saved.filter(p=>!ids.has(Number(p.id))).map(p=>({...p,id:Number(p.id),images:Array.isArray(p.images)?p.images:[],stock:p.stock??1,status:p.status||"available"}));return [...base,...extra];};
 const hash=txt=>crypto.createHash("sha256").update(String(txt)).digest("hex");
 if(!fs.existsSync(settingsFile)) fs.writeFileSync(settingsFile,JSON.stringify({
   siteOpen:false,
@@ -61,16 +66,16 @@ const readSettings=()=>{
  };
  return runtimeSettings;
 };
-const writeSettings=s=>{ runtimeSettings={...s}; try{fs.writeFileSync(settingsFile,JSON.stringify(runtimeSettings,null,2))}catch(e){console.error("Settings speichern:",e.message)} };
-const writeProducts=p=>fs.writeFileSync(dbFile,JSON.stringify(p,null,2));
-const readReturns=()=>{try{return JSON.parse(fs.readFileSync(returnsFile,"utf8"))}catch{return []}};
-const writeReturns=x=>fs.writeFileSync(returnsFile,JSON.stringify(x,null,2));
-const readOrders=()=>{try{return JSON.parse(fs.readFileSync(ordersFile,"utf8"))}catch{return []}};
-const writeOrders=x=>fs.writeFileSync(ordersFile,JSON.stringify(x,null,2));
-const readSubscribers=()=>{try{return JSON.parse(fs.readFileSync(subscribersFile,"utf8"))}catch{return []}};
-const writeSubscribers=x=>fs.writeFileSync(subscribersFile,JSON.stringify(x,null,2));
-const readAnalytics=()=>{try{return JSON.parse(fs.readFileSync(analyticsFile,"utf8"))}catch{return {}}};
-const writeAnalytics=x=>fs.writeFileSync(analyticsFile,JSON.stringify(x,null,2));
+const writeSettings=s=>{runtimeSettings={...s};persist("settings",runtimeSettings);};
+const writeProducts=p=>persist("products",p);
+const readReturns=()=>store.returns||localJson(returnsFile,[]);
+const writeReturns=x=>persist("returns",x);
+const readOrders=()=>store.orders||localJson(ordersFile,[]);
+const writeOrders=x=>persist("orders",x);
+const readSubscribers=()=>store.subscribers||localJson(subscribersFile,[]);
+const writeSubscribers=x=>persist("subscribers",x);
+const readAnalytics=()=>store.analytics||localJson(analyticsFile,{});
+const writeAnalytics=x=>persist("analytics",x);
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"N&D VINTAGE2026!";
 const sessions=new Map();
