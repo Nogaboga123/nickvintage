@@ -267,11 +267,14 @@ app.put("/api/admin/products/:id",auth,(req,res)=>{
  p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);writeProducts(p);res.json(p[i]);
 });
 app.post("/api/admin/products/:id/duplicate",auth,(req,res)=>{const p=readProducts(),src=p.find(x=>Number(x.id)===Number(req.params.id));if(!src)return res.status(404).json({error:"Produkt nicht gefunden"});const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;const copy={...src,id,name:src.name+" – Kopie",hidden:true,status:(Number(src.stock||0)>0?"available":"sold")};p.push(copy);writeProducts(p);res.status(201).json(copy)});
-app.delete("/api/admin/products/:id",auth,(req,res)=>{
- const p=readProducts();const id=Number(req.params.id);const item=p.find(x=>x.id===id);
- writeProducts(p.filter(x=>x.id!==id));
- if(item?.image?.startsWith("/uploads/")){const f=path.join(__dirname,item.image);if(fs.existsSync(f))fs.unlinkSync(f)}
- res.json({ok:true});
+app.delete("/api/admin/products/:id",auth,async(req,res)=>{
+ try{
+  const p=readProducts(),id=Number(req.params.id),item=p.find(x=>Number(x.id)===id);
+  if(!item)return res.status(404).json({error:"Produkt nicht gefunden"});
+  await writeProducts(p.filter(x=>Number(x.id)!==id));
+  if(item.image?.startsWith("/uploads/")){const f=path.join(__dirname,item.image);try{if(fs.existsSync(f))fs.unlinkSync(f)}catch(e){console.warn("Produktbild konnte nicht gelöscht werden:",e.message)}}
+  res.json({ok:true});
+ }catch(e){console.error("Produkt löschen:",e.message);res.status(500).json({error:"Produkt konnte nicht gelöscht werden."})}
 });
 app.post("/api/admin/upload",auth,upload.single("image"),(req,res)=>{
  if(!req.file)return res.status(400).json({error:"Bild fehlt oder Format nicht erlaubt"});
