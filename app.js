@@ -11,6 +11,7 @@ let products=[
 {id:10,name:"Nike Tech Pants — Black",cat:"Trackpants",size:"M",price:59.99,condition:"Sehr gut",tag:"NIKE TECH",code:"NIKE",cls:"p10",new:true,status:"available"}];
 let cart=JSON.parse(localStorage.getItem("nd-vintage-cart")||"[]");
 let activeFilter="Alle";
+let discountCode=localStorage.getItem("nd-vintage-discount")||"";
 let favorites=(()=>{try{const v=JSON.parse(localStorage.getItem("nd-vintage-favorites-v2")||"[]");return Array.isArray(v)?[...new Set(v.map(Number).filter(Number.isFinite))]:[]}catch{return []}})();
 
 const imageMap={
@@ -136,13 +137,14 @@ document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==
 document.getElementById("cartBtn").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("overlay").onclick=closeCart;
 document.getElementById("closeModal").onclick=closeProduct;document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutModal").classList.remove("open");
 document.getElementById("checkoutBtn").onclick=openCheckout;
+const discountInput=document.getElementById("discountCode"),discountMsg=document.getElementById("discountMsg");if(discountInput)discountInput.value=discountCode;document.getElementById("applyDiscount")?.addEventListener("click",()=>{discountCode=(discountInput?.value||"").trim().toUpperCase();if(!discountCode){localStorage.removeItem("nd-vintage-discount");if(discountMsg)discountMsg.textContent="Bitte einen Rabattcode eingeben.";return}localStorage.setItem("nd-vintage-discount",discountCode);if(discountMsg)discountMsg.textContent="Code übernommen – der Rabatt wird beim Checkout geprüft ✓";});
 document.querySelectorAll("[data-cat]").forEach(a=>a.onclick=()=>{activeFilter=a.dataset.cat;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===activeFilter));renderProducts()});
 document.getElementById("earlyForm").onsubmit=e=>{e.preventDefault();document.getElementById("earlyMsg").textContent="Danke — deine E-Mail wurde für den Demo-Early-Access vorgemerkt.";e.target.reset()};
 document.getElementById("checkoutForm").onsubmit=async e=>{
  e.preventDefault();
  const btn=e.target.querySelector("button"); btn.disabled=true; btn.textContent="CHECKOUT WIRD GELADEN…";
  try{
-  const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim()})});
+  const r=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:cart,customerEmail:e.target.querySelector("input[type=email]").value.trim(),discountCode})});
   const data=await r.json();
   if(!r.ok) throw new Error(data.error||"Checkout-Fehler");
   if(data.url){location.href=data.url;return;}
