@@ -173,3 +173,6 @@ async function loadCatalog(){
 loadCatalog();
 fetch("/api/trending").then(r=>{if(!r.ok)throw Error();return r.json()}).then(xs=>{trendingIds=new Set(xs.filter(x=>Number(x.score)>0).slice(0,3).map(x=>Number(x.id)));if(productsLoaded)renderProducts()}).catch(()=>{});
 fetch("/api/public-settings").then(r=>{if(!r.ok)throw Error();return r.json()}).then(settings=>{publicSettings=settings;if(productsLoaded)updateCart()}).catch(()=>{});
+
+if(location.hash==="#cart")openCart();
+addEventListener("hashchange",()=>{if(location.hash==="#cart")openCart()});

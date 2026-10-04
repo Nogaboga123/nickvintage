@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20261004b">
-<link rel="stylesheet" href="/storefront.css?v=20261004-design2"></head>
+<link rel="stylesheet" href="/storefront.css?v=20261004-polish"></head>
 <body class="nd-store">
   <div class="announcement">KOSTENLOSER VERSAND AB 100 € · NÄCHSTER DROP: <span id="topCountdown">--:--:--</span></div>
 
@@ -165,7 +165,7 @@
     <div class="footer-main">
       <div><a class="logo" href="#home">N&amp;D <span>VINTAGE</span></a><p>Vintage streetwear.<br>Selected with purpose.</p></div>
       <div><h4>SHOP</h4><a href="#shop">Alle Pieces</a><a href="#categories">Kategorien</a><a href="/drop.html">Drops</a><a href="/drop-archiv.html">Drop-Archiv</a></div>
-      <div><h4>INFO</h4><a href="#about">Über uns</a><a href="#faq">FAQ</a><a href="#faq">Versand & Rückgabe</a><a href="#order-status">Bestellung verfolgen</a><a href="retouren.html">Retouren</a></div>
+      <div><h4>HILFE</h4><a href="#about">Über uns</a><a href="#faq">FAQ</a><a href="#faq">Versand & Rückgabe</a><a href="#order-status">Bestellung verfolgen</a><a href="retouren.html">Retouren</a></div>
       <div><h4>RECHTLICHES</h4><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB</a><a href="widerruf.html">Widerruf</a></div>
     </div>
     <div class="footer-bottom"><span>© 2026 N&amp;D VINTAGE</span><span>Made for the next generation of vintage.</span></div>
@@ -203,12 +203,12 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261004-design2"></script><script>fetch("/api/public-settings").then(r=>r.json()).then(s=>{if(s.dropName)document.getElementById("dropTitle").textContent=s.dropName;if(!s.dropDate)return;const target=new Date(s.dropDate);const tick=()=>{const d=Math.max(0,target-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),sec=Math.floor(d%6e4/1000),txt=[h,m,sec].map(x=>String(x).padStart(2,"0")).join(":");document.getElementById("countdown").textContent=txt;document.getElementById("topCountdown").textContent=txt};tick();setInterval(tick,1000)}).catch(()=>{});document.getElementById("mobileCart")?.addEventListener("click",()=>document.getElementById("cartBtn")?.click());</script>
+  <script src="app.js?v=20261004-polish"></script><script>fetch("/api/public-settings").then(r=>r.json()).then(s=>{if(s.dropName)document.getElementById("dropTitle").textContent=s.dropName;if(!s.dropDate)return;const target=new Date(s.dropDate);const tick=()=>{const d=Math.max(0,target-Date.now()),h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),sec=Math.floor(d%6e4/1000),txt=[h,m,sec].map(x=>String(x).padStart(2,"0")).join(":");document.getElementById("countdown").textContent=txt;document.getElementById("topCountdown").textContent=txt};tick();setInterval(tick,1000)}).catch(()=>{});document.getElementById("mobileCart")?.addEventListener("click",()=>document.getElementById("cartBtn")?.click());</script>
   <script>
   (()=>{const b=document.getElementById("menuBtn"),m=document.getElementById("mobileMenu");if(!b||!m)return;b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();const open=m.classList.toggle("open");m.setAttribute("aria-hidden",String(!open));b.setAttribute("aria-expanded",String(open));b.textContent=open?"×":"☰"});const close=()=>{m.classList.remove("open");m.setAttribute("aria-hidden","true");b.setAttribute("aria-expanded","false");b.textContent="☰"};m.querySelectorAll("a").forEach(a=>a.addEventListener("click",close));document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});document.addEventListener("click",e=>{if(m.classList.contains("open")&&!m.contains(e.target)&&e.target!==b)close()});})();
   </script>
   <script>
   document.querySelectorAll('a[href="#order-status"]').forEach(a=>a.addEventListener("click",()=>{document.getElementById("order-status").open=true}));
   </script>
-<script src="/storefront-ui.js?v=20261004-design2"></script></body>
+<script src="/storefront-ui.js?v=20261004-polish"></script></body>
 </html>
