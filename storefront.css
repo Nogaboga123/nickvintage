@@ -315,3 +315,72 @@ body.nd-store{--nd-ink:#243d33;--nd-paper:#f4f1ea;--nd-line:#dedbd2;background:v
 .nd-store .site-header .logo{font-size:20px;white-space:nowrap}
 .nd-store .logo span{font-weight:500}
 @media(max-width:680px){.nd-store .site-header .logo{font-size:20px;white-space:normal;line-height:1.1;max-width:135px}.nd-store .site-header .logo span{display:block;font-size:12px;letter-spacing:-.02em}.nd-store .site-header:not(:has(.header-actions)) .logo{max-width:none}.nd-store .footer-main .logo{font-size:20px}}
+
+/* Brand refresh: stacked N vintage wordmark and one Early Access green. */
+.nd-store{
+  --nd-ink:#243d33;
+  --nd-paper:#f4f1ea;
+  --nd-line:#dedbd2;
+}
+.nd-store .site-header .logo,
+.nd-store .footer-main .logo{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:4px;
+  white-space:nowrap;
+  line-height:.78;
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-.075em;
+}
+.nd-store .site-header .logo{color:var(--nd-ink)}
+.nd-store .footer-main .logo{color:var(--nd-paper)}
+.nd-store .logo span{
+  display:block;
+  font-size:0;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:inherit;
+}
+.nd-store .logo span::after{
+  content:"vintage";
+  font-size:9px;
+  letter-spacing:.14em;
+  line-height:1;
+  text-transform:lowercase;
+}
+.nd-store .benefit-strip{background:var(--nd-paper)}
+.nd-store .filter-chip,
+.nd-store .empty-symbol,
+.nd-store .brand-choice:hover,
+.nd-store .brand-choice[aria-pressed="true"]{
+  background:var(--nd-paper);
+  color:var(--nd-ink);
+  border-color:var(--nd-line);
+}
+.nd-store .filter-chip:hover{background:var(--nd-paper)}
+.nd-store .category-filters,
+.nd-store .filter-panel.open{
+  background:#fff;
+  border-color:var(--nd-line);
+  box-shadow:none;
+}
+.nd-store .brand-picker-toggle{border-color:var(--nd-line)}
+.nd-store .brand-picker-toggle:hover,
+.nd-store .brand-picker-toggle[aria-expanded="true"]{border-color:var(--nd-ink);background:#fff}
+.nd-store .shop-controls .filter-toggle:hover{background:var(--nd-ink)}
+.nd-store .nd-mobile-nav .nav-current{color:var(--nd-ink);background:var(--nd-paper)}
+.nd-store .footer-bottom{color:var(--nd-paper)}
+@media(max-width:680px){
+  .nd-store .site-header .logo,
+  .nd-store .footer-main .logo{
+    font-size:24px;
+    line-height:.8;
+    max-width:none;
+  }
+  .nd-store .logo span::after{font-size:8px}
+}
+
