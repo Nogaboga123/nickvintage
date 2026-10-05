@@ -158,12 +158,12 @@ app.get("/produkt.html",(req,res,next)=>{
   const base=(process.env.PUBLIC_URL||"https://nickvintage.onrender.com").replace(/\/$/,"");
   const pageUrl=base+"/produkt.html?id="+encodeURIComponent(id);
   const rawImage=String(p.image||((Array.isArray(p.images)&&p.images[0])||"")).trim();
-  const image=rawImage?(rawImage.startsWith("http")?rawImage:base+(rawImage.startsWith("/")?"":"/")+rawImage):base+"/n-vintage-preview-v2.png";
-  const title=String(p.name||"Vintage Piece")+" | Vintage Streetwear | N best of vintage";
+  const image=rawImage?(rawImage.startsWith("http")?rawImage:base+(rawImage.startsWith("/")?"":"/")+rawImage):base+"/n-vintage-preview-v3.png";
+  const title=String(p.name||"Vintage Piece")+" | Vintage Streetwear | N Vintage";
   const price=Number(p.price||0);
   const desc=(String(p.description||"").trim()||String(p.name||"Vintage Piece")+" – Vintage "+String(p.cat||"Streetwear")+" in Größe "+String(p.size||"—")+", Zustand "+String(p.condition||"Vintage Piece")+".")+" Preis: "+price.toLocaleString("de-DE",{style:"currency",currency:"EUR"})+".";
   const availability=(p.status==="sold"||Number(p.stock||0)<=0)?"https://schema.org/OutOfStock":"https://schema.org/InStock";
-  const productJson=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:String(p.name||"Vintage Piece"),description:desc,image:[image],sku:"ND-"+id,brand:{"@type":"Brand",name:String(p.code||p.tag||"N best of vintage")},itemCondition:"https://schema.org/UsedCondition",offers:{"@type":"Offer",url:pageUrl,priceCurrency:"EUR",price:price.toFixed(2),availability,itemCondition:"https://schema.org/UsedCondition",seller:{"@type":"Organization",name:"N best of vintage"}}}).replace(/</g,"\\u003c");
+  const productJson=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:String(p.name||"Vintage Piece"),description:desc,image:[image],sku:"ND-"+id,brand:{"@type":"Brand",name:String(p.code||p.tag||"N Vintage")},itemCondition:"https://schema.org/UsedCondition",offers:{"@type":"Offer",url:pageUrl,priceCurrency:"EUR",price:price.toFixed(2),availability,itemCondition:"https://schema.org/UsedCondition",seller:{"@type":"Organization",name:"N Vintage"}}}).replace(/</g,"\\u003c");
   const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="product"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+escMeta(image)+'"><meta property="product:price:amount" content="'+escMeta(price.toFixed(2))+'"><meta property="product:price:currency" content="EUR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+escMeta(title)+'"><meta name="twitter:description" content="'+escMeta(desc)+'"><meta name="twitter:image" content="'+escMeta(image)+'"><script type="application/ld+json">'+productJson+'</script>';
   res.type("html").send(file.replace("<title>Produkt — N best of vintage</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
@@ -176,9 +176,9 @@ app.get("/kategorie.html",(req,res,next)=>{
   const file=fs.readFileSync(path.join(__dirname,"kategorie.html"),"utf8");
   const escMeta=v=>String(v??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const base=(process.env.PUBLIC_URL||"https://nickvintage.onrender.com").replace(/\/$/,""),pageUrl=base+"/kategorie.html?cat="+encodeURIComponent(key);
-  const title=cat+" Vintage kaufen | N best of vintage";
+  const title=cat+" Vintage kaufen | N Vintage";
   const desc="Entdecke ausgewählte Vintage "+cat+" bei N best of vintage. Kuratierte Streetwear, Einzelstücke, transparente Zustandsangaben und Maße.";
-  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="website"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+base+'/n-vintage-preview-v2.png"><meta name="twitter:card" content="summary_large_image">';
+  const meta='<title>'+escMeta(title)+'</title><meta name="description" content="'+escMeta(desc)+'"><link rel="canonical" href="'+escMeta(pageUrl)+'"><meta name="robots" content="index,follow"><meta property="og:title" content="'+escMeta(title)+'"><meta property="og:description" content="'+escMeta(desc)+'"><meta property="og:type" content="website"><meta property="og:url" content="'+escMeta(pageUrl)+'"><meta property="og:image" content="'+base+'/n-vintage-preview-v3.png"><meta name="twitter:card" content="summary_large_image">';
   res.type("html").send(file.replace("<title>Produkt — N best of vintage</title>","").replace("</head>",meta+"</head>"));
  }catch(e){next(e)}
 });
