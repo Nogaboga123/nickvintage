@@ -183,6 +183,11 @@ app.get("/kategorie.html",(req,res,next)=>{
  }catch(e){next(e)}
 });
 app.use((req,res,next)=>{if(req.path==="/admin.html"||req.path.startsWith("/api/admin/"))res.setHeader("Cache-Control","private, no-store");next()});
+const sitemapBaseUrlRaw=process.env.PUBLIC_URL||process.env.RENDER_EXTERNAL_URL||"https://nickvintage.onrender.com";
+const sitemapBaseUrl=sitemapBaseUrlRaw.endsWith("/")?sitemapBaseUrlRaw.slice(0,-1):sitemapBaseUrlRaw;
+app.get("/robots.txt",(_req,res)=>res.type("text/plain").send(["User-agent: *","Allow: /","Sitemap: "+sitemapBaseUrl+"/sitemap.xml",""].join(String.fromCharCode(10))));
+app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...["tracksuits","trackpants","jacken","hoodies","sweater","jeans","shirts"].map(cat=>"/kategorie.html?cat="+cat),...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+sitemapBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
+
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const settings=readSettings();
@@ -363,10 +368,6 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   res.json({url:session.url});
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
-const sitemapBaseUrlRaw=process.env.PUBLIC_URL||process.env.RENDER_EXTERNAL_URL||"https://nickvintage.onrender.com";
-const sitemapBaseUrl=sitemapBaseUrlRaw.endsWith("/")?sitemapBaseUrlRaw.slice(0,-1):sitemapBaseUrlRaw;
-app.get("/robots.txt",(_req,res)=>res.type("text/plain").send(["User-agent: *","Allow: /","Sitemap: "+sitemapBaseUrl+"/sitemap.xml",""].join(String.fromCharCode(10))));
-app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...["tracksuits","trackpants","jacken","hoodies","sweater","jeans","shirts"].map(cat=>"/kategorie.html?cat="+cat),...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+sitemapBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
 async function start(){
  if(pool){
