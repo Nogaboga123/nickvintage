@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 Disallow: /data/
-Sitemap: https://DEINE-DOMAIN.DE/sitemap.xml
+Sitemap: https://nickvintage.onrender.com/sitemap.xml
