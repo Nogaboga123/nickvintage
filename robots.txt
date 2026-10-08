@@ -1,3 +1,13 @@
+User-agent: Googlebot
+Allow: /
+Disallow: /admin.html
+Disallow: /data/
+
+User-agent: Google-InspectionTool
+Allow: /
+Disallow: /admin.html
+Disallow: /data/
+
 User-agent: *
 Allow: /
 Disallow: /admin.html
