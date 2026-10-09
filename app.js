@@ -35,6 +35,7 @@ function renderProducts(){
  if(!availability)list.sort((a,b)=>(a.status==="sold")-(b.status==="sold"));
  const q=(document.getElementById("searchInput").value||"").toLowerCase().trim();
  if(q){const aliases={rot:"red",blau:"blue navy",navy:"navy blau",grau:"grey gray",grey:"grey grau",schwarz:"black",black:"black schwarz",beige:"beige",weiß:"white",weiss:"white",grün:"green",gruen:"green",gelb:"yellow"};const terms=q.split(/\s+/).filter(Boolean);list=list.filter(p=>{const raw=[p.name,p.cat,p.code,p.tag,p.size,p.condition,p.color,p.colour,p.description].filter(Boolean).join(" ").toLowerCase();const hay=raw+" "+Object.entries(aliases).filter(([de,en])=>raw.includes(de)||en.split(" ").some(x=>raw.includes(x))).flat().join(" ");return terms.every(t=>hay.includes(t)||(aliases[t]||"").split(" ").some(x=>x&&hay.includes(x)))})}
+ list.sort((a,b)=>Number(b.code==="MYSTERYBOX")-Number(a.code==="MYSTERYBOX"));
  document.getElementById("productTotal").textContent=list.length+" Pieces";
  document.getElementById("products").innerHTML=list.map(p=>{
   const id=Number(p.id),fav=favorites.includes(id);
