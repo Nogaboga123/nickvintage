@@ -411,7 +411,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    line_items,
-   shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser DHL Versand":"DHL Paket"}}],
+   shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom??100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom??100)?"Kostenloser DHL Versand":"DHL Paket"}}],
    customer_email:customerEmail||undefined,
    metadata:{items:itemMeta,discountCode:code||"",shippingCountry:country},
    success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
