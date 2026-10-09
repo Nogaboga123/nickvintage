@@ -434,25 +434,20 @@ async function start(){
  }else console.warn("DATABASE_URL fehlt - lokale JSON-Daten werden verwendet.");
  const draftSettings=store.settings||localJson(settingsFile,{});
  const products=readProducts();
- const existingBox=products.find(p=>p.code==="MYSTERYBOX");
- if(existingBox&&!existingBox.image){existingBox.image="/mystery-box.svg";existingBox.images=[existingBox.image];await writeProducts(products)}
- if(draftSettings.mysteryBoxDraftSeededV1!==true){
-  if(!existingBox){
-   const id=products.length?Math.max(...products.map(p=>Number(p.id)||0))+1:1;
-   products.push({id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"/mystery-box.svg",images:["/mystery-box.svg"],new:false,status:"sold",hidden:true});
-   await writeProducts(products);
-  }
-  await persist("settings",{...draftSettings,mysteryBoxDraftSeededV1:true});
+ let box=products.find(p=>p.code==="MYSTERYBOX");
+ if(!box){
+  const id=products.length?Math.max(...products.map(p=>Number(p.id)||0))+1:1;
+  box={id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"/mystery-box.svg",images:["/mystery-box.svg"],new:false,status:"sold",hidden:false,comingSoon:true};
+  products.push(box);
+  await writeProducts(products);
  }
+ if(!box.image){box.image="/mystery-box.svg";box.images=[box.image];await writeProducts(products)}
  const currentSettings=store.settings||draftSettings;
- if(currentSettings.mysteryBoxUnhiddenV1!==true){
-  const currentProducts=readProducts(),box=currentProducts.find(p=>p.code==="MYSTERYBOX");
-  if(box){
-   box.hidden=false;
-   box.comingSoon=true;
-   await writeProducts(currentProducts);
-   await persist("settings",{...currentSettings,mysteryBoxUnhiddenV1:true});
-  }
+ if(currentSettings.mysteryBoxUnhiddenV2!==true){
+  box.hidden=false;
+  box.comingSoon=true;
+  await writeProducts(products);
+  await persist("settings",{...currentSettings,mysteryBoxDraftSeededV1:true,mysteryBoxUnhiddenV1:true,mysteryBoxUnhiddenV2:true});
  }
  app.listen(process.env.PORT||4242,()=>console.log("N best of vintage läuft auf http://localhost:"+(process.env.PORT||4242)));
  void processPendingOrderEmails();const emailWorker=setInterval(()=>void processPendingOrderEmails(),60000);emailWorker.unref();
