@@ -432,6 +432,16 @@ async function start(){
    console.log("Neon-Datenbank verbunden.");
   }catch(e){console.error("Neon Startfehler:",e.message);process.exit(1)}
  }else console.warn("DATABASE_URL fehlt - lokale JSON-Daten werden verwendet.");
+ const draftSettings=store.settings||localJson(settingsFile,{});
+ if(draftSettings.mysteryBoxDraftSeededV1!==true){
+  const products=readProducts();
+  if(!products.some(p=>p.code==="MYSTERYBOX")){
+   const id=products.length?Math.max(...products.map(p=>Number(p.id)||0))+1:1;
+   products.push({id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"",images:[],new:false,status:"sold",hidden:true});
+   await writeProducts(products);
+  }
+  await persist("settings",{...draftSettings,mysteryBoxDraftSeededV1:true});
+ }
  app.listen(process.env.PORT||4242,()=>console.log("N best of vintage läuft auf http://localhost:"+(process.env.PORT||4242)));
  void processPendingOrderEmails();const emailWorker=setInterval(()=>void processPendingOrderEmails(),60000);emailWorker.unref();
 }
