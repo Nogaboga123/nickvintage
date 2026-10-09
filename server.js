@@ -376,7 +376,7 @@ app.post("/api/admin/products",auth,async(req,res)=>{
 app.put("/api/admin/products/:id",auth,async(req,res)=>{
  const p=readProducts();const id=Number(req.params.id);const i=p.findIndex(x=>x.id===id);
  if(i<0)return res.status(404).json({error:"Produkt nicht gefunden"});
- p[i]={...p[i],...req.body,id};p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);await writeProducts(p);res.json(p[i]);
+ p[i]={...p[i],...req.body,id};if(p[i].code==="MYSTERYBOX")p[i].displayStatus=req.body.displayStatus==="sold"?"sold":"comingSoon";p[i].stock=Math.max(0,Number(p[i].stock)||0);p[i].status=p[i].stock>0?(p[i].status==="sold"?"available":(p[i].status||"available")):"sold";if(Array.isArray(p[i].images))p[i].images=p[i].images.map(String).filter(Boolean);await writeProducts(p);res.json(p[i]);
 });
 app.post("/api/admin/products/:id/duplicate",auth,async(req,res)=>{const p=readProducts(),src=p.find(x=>Number(x.id)===Number(req.params.id));if(!src)return res.status(404).json({error:"Produkt nicht gefunden"});const id=p.length?Math.max(...p.map(x=>Number(x.id)||0))+1:1;const copy={...src,id,name:src.name+" – Kopie",hidden:true,status:(Number(src.stock||0)>0?"available":"sold")};p.push(copy);await writeProducts(p);res.status(201).json(copy)});
 app.delete("/api/admin/products/:id",auth,async(req,res)=>{
@@ -437,7 +437,7 @@ async function start(){
  let box=products.find(p=>p.code==="MYSTERYBOX");
  if(!box){
   const id=products.length?Math.max(...products.map(p=>Number(p.id)||0))+1:1;
-  box={id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"/mystery-box.svg",images:["/mystery-box.svg"],new:false,status:"sold",hidden:false,comingSoon:true};
+  box={id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"/mystery-box.svg",images:["/mystery-box.svg"],new:false,status:"sold",hidden:false,comingSoon:true,displayStatus:"comingSoon"};
   products.push(box);
   await writeProducts(products);
  }
