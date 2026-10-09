@@ -27,7 +27,7 @@ function renderProducts(){
  if(size)list=list.filter(p=>String(p.size||"").toLowerCase()===size.toLowerCase());
  if(color)list=list.filter(p=>productColor(p)===color);
  if(price){const [min,max]=price.split("-").map(Number);list=list.filter(p=>Number(p.price)>=min&&Number(p.price)<=max)}
- if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":p.status!=="sold");else list=list.filter(p=>p.status!=="sold");
+ if(availability)list=list.filter(p=>availability==="sold"?p.status==="sold":availability==="available"?p.status!=="sold":true);else list=list.filter(p=>p.status!=="sold"||p.code==="MYSTERYBOX");
  const sort=document.getElementById("sort").value;
  if(sort==="low")list.sort((a,b)=>a.price-b.price);
  if(sort==="high")list.sort((a,b)=>b.price-a.price);
