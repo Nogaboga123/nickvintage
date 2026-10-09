@@ -108,6 +108,53 @@ function setEarlyCookie(req,res,passwordHash){
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const stripeWebhookSecret=process.env.STRIPE_WEBHOOK_SECRET||"";
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
+const emailApiKey=process.env.RESEND_API_KEY||"",emailFrom=process.env.EMAIL_FROM||"",emailReplyTo=process.env.EMAIL_REPLY_TO||"";
+let emailWorkerRunning=false;
+function escapeEmailHtml(value){return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function emailMoney(value){return Number(value||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})}
+function emailFrame(title,content){return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeEmailHtml(title)+'</title></head><body style="margin:0;background:#f5f3ef;color:#252521;font-family:Arial,sans-serif"><div style="max-width:620px;margin:0 auto;padding:28px 16px"><div style="background:#fff;border:1px solid #e9e5df;padding:28px"><div style="font-size:13px;font-weight:700;letter-spacing:.16em">N VINTAGE</div>'+content+'<p style="margin:28px 0 0;color:#777;font-size:13px">N Vintage</p></div></div></body></html>'}
+function orderConfirmationContent(order){
+ const rows=(order.items||[]).map(item=>'<tr><td style="padding:10px 0;border-bottom:1px solid #eee"><b>'+escapeEmailHtml(item.name)+'</b><br><span style="color:#777">Größe '+escapeEmailHtml(item.size||"—")+' · Menge '+Number(item.qty||1)+'</span></td><td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">'+emailMoney(Number(item.chargedUnitPrice||item.price)*Number(item.qty||1))+'</td></tr>').join("");
+ const html=emailFrame("Bestellung bestätigt",'<h1 style="font-size:25px;margin:28px 0 8px">Bestellung bestätigt</h1><p style="line-height:1.6">Danke für deine Bestellung. Wir bereiten sie jetzt vor.</p><p style="color:#777">Bestellnummer: <b>'+escapeEmailHtml(order.id)+'</b></p><table role="presentation" style="width:100%;border-collapse:collapse;margin-top:20px">'+rows+'<tr><td style="padding:12px 0">Versand</td><td style="padding:12px 0;text-align:right">'+(Number(order.shippingTotal||0)===0?"Kostenlos":emailMoney(order.shippingTotal))+'</td></tr><tr><td style="padding:12px 0;font-size:18px"><b>Gesamt</b></td><td style="padding:12px 0;text-align:right;font-size:18px"><b>'+emailMoney(order.total)+'</b></td></tr></table>');
+ const text=["Bestellung bestätigt","Danke für deine Bestellung. Wir bereiten sie jetzt vor.","Bestellnummer: "+order.id,"",...(order.items||[]).map(item=>Number(item.qty||1)+" x "+item.name+" (Größe "+(item.size||"—")+") — "+emailMoney(Number(item.chargedUnitPrice||item.price)*Number(item.qty||1))),"","Versand: "+(Number(order.shippingTotal||0)===0?"Kostenlos":emailMoney(order.shippingTotal)),"Gesamt: "+emailMoney(order.total),"","N Vintage"].join("\n");
+ return {html,text};
+}
+function shippingNoticeContent(order){
+ const tracking=String(order.tracking||""),trackingUrl=order.carrier==="DHL"&&tracking?"https://www.dhl.de/de/privatkunden/dhl-sendungsverfolgung.html?piececode="+encodeURIComponent(tracking):"";
+ const html=emailFrame("Deine Bestellung ist unterwegs",'<h1 style="font-size:25px;margin:28px 0 8px">Deine Bestellung ist unterwegs</h1><p style="line-height:1.6">Deine Bestellung <b>'+escapeEmailHtml(order.id)+'</b> wurde mit DHL versendet.</p><p style="margin:22px 0"><b>Sendungsnummer:</b><br>'+escapeEmailHtml(tracking)+'</p>'+(trackingUrl?'<p><a href="'+trackingUrl+'" style="display:inline-block;background:#252521;color:#fff;text-decoration:none;padding:14px 20px;font-weight:700">DHL Sendung verfolgen</a></p>':""));
+ return {html,text:["Deine Bestellung ist unterwegs","Bestellung: "+order.id,"Versanddienst: DHL","Sendungsnummer: "+tracking,trackingUrl?"Sendung verfolgen: "+trackingUrl:"","N Vintage"].filter(Boolean).join("\n")};
+}
+async function sendTransactionalEmail({to,subject,html,text,idempotencyKey}){
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+ try{
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+emailApiKey,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},body:JSON.stringify({from:emailFrom,to,reply_to:emailReplyTo||undefined,subject,html,text}),signal:controller.signal});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error("E-Mail-Anbieter HTTP "+response.status+(result.message?": "+String(result.message).slice(0,160):""));
+  return result;
+ }finally{clearTimeout(timeout)}
+}
+async function processPendingOrderEmails(){
+ if(!emailApiKey||!emailFrom||emailWorkerRunning)return;
+ emailWorkerRunning=true;
+ try{
+  const orders=readOrders();let changed=false;
+  for(const order of orders){
+   if(order.test===true||!order.email)continue;
+   if(order.confirmationEmailStatus==="pending"&&Number(order.confirmationEmailAttempts||0)<5){
+    order.confirmationEmailAttempts=Number(order.confirmationEmailAttempts||0)+1;changed=true;
+    try{const content=orderConfirmationContent(order);await sendTransactionalEmail({to:order.email,subject:"Bestellung "+order.id+" bestätigt | N Vintage",...content,idempotencyKey:"n-vintage-confirm-"+hash(order.id).slice(0,32)});order.confirmationEmailStatus="sent";order.confirmationEmailSentAt=new Date().toISOString();delete order.confirmationEmailError}
+    catch(error){order.confirmationEmailStatus=order.confirmationEmailAttempts>=5?"failed":"pending";order.confirmationEmailError=String(error.message||"Versand fehlgeschlagen").slice(0,180);console.error("Bestellbestätigung fehlgeschlagen:",order.id,error.message)}
+   }
+   if(order.status==="Versendet"&&order.tracking&&order.shippingEmailStatus==="pending"&&order.shippingEmailTracking===order.tracking&&Number(order.shippingEmailAttempts||0)<5){
+    order.shippingEmailAttempts=Number(order.shippingEmailAttempts||0)+1;changed=true;
+    try{const content=shippingNoticeContent(order);await sendTransactionalEmail({to:order.email,subject:"Deine Bestellung "+order.id+" ist unterwegs | N Vintage",...content,idempotencyKey:"n-vintage-shipped-"+hash(order.id+"|"+order.tracking).slice(0,32)});order.shippingEmailStatus="sent";order.shippingEmailSentAt=new Date().toISOString();order.shippingEmailSentTracking=order.tracking;delete order.shippingEmailError}
+    catch(error){order.shippingEmailStatus=order.shippingEmailAttempts>=5?"failed":"pending";order.shippingEmailError=String(error.message||"Versand fehlgeschlagen").slice(0,180);console.error("Versandmail fehlgeschlagen:",order.id,error.message)}
+   }
+  }
+  if(changed)await writeOrders(orders);
+ }catch(error){console.error("E-Mail-Warteschlange:",error.message)}
+ finally{emailWorkerRunning=false}
+}
 
 app.use(cors({origin:false}));
 app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,res)=>{
@@ -125,8 +172,9 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
     const aa=readAnalytics();for(const x of parsed){const k=String(x.id);aa[k]=aa[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};aa[k].purchases=(aa[k].purchases||0)+Number(x.qty||1);aa[k].events=Array.isArray(aa[k].events)?aa[k].events:[];aa[k].events.push({type:"purchase",at:new Date().toISOString()})}await writeAnalytics(aa);
     const itemsTotal=Math.round(orderItems.reduce((sum,x)=>sum+Number(x.chargedUnitPrice||x.price)*Number(x.qty||1),0)*100)/100,total=Math.round(Number(s.amount_total||0))/100;
     const shipping=s.shipping_details||s.collected_information?.shipping_details||{},address=shipping.address||{};
-    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",customerName:shipping.name||s.customer_details?.name||"",shippingAddress:{line1:String(address.line1||""),line2:String(address.line2||""),postalCode:String(address.postal_code||""),city:String(address.city||""),state:String(address.state||""),country:String(address.country||s.metadata?.shippingCountry||"")},items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(address.country||s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"DHL",test:s.livemode===false,createdAt:new Date().toISOString()});
+    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",customerName:shipping.name||s.customer_details?.name||"",shippingAddress:{line1:String(address.line1||""),line2:String(address.line2||""),postalCode:String(address.postal_code||""),city:String(address.city||""),state:String(address.state||""),country:String(address.country||s.metadata?.shippingCountry||"")},items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(address.country||s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"DHL",test:s.livemode===false,confirmationEmailStatus:"pending",confirmationEmailAttempts:0,createdAt:new Date().toISOString()});
     await writeOrders(orders);
+    void processPendingOrderEmails();
    }
   }
   res.json({received:true});
@@ -254,14 +302,18 @@ app.get("/api/admin/stats",auth,(_req,res)=>{
  res.json({revenue,orders:orders.length,average:orders.length?revenue/orders.length:0,estimatedProfit:revenue-cost,cost,margin:revenue?((revenue-cost)/revenue)*100:0,daily:days})
 });
 app.get("/api/admin/drop-stats",auth,(_req,res)=>{const ps=readProducts(),os=readOrders().filter(o=>o.status!=="Storniert"),map={};for(const p of ps){const d=String(p.drop||"OHNE DROP");if(!map[d])map[d]={drop:d,pieces:0,available:0,sold:0,revenue:0,cost:0};map[d].pieces++;if(p.status==="sold")map[d].sold++;else if(!p.hidden)map[d].available++}for(const o of os)for(const i of (o.items||[])){const p=ps.find(x=>Number(x.id)===Number(i.id));const d=String(p?.drop||"OHNE DROP");if(!map[d])map[d]={drop:d,pieces:0,available:0,sold:0,revenue:0,cost:0};map[d].revenue+=Number(i.price||0)*Number(i.qty||1);map[d].cost+=Number(i.purchasePrice??p?.purchasePrice??0)*Number(i.qty||1)}res.json(Object.values(map).map(x=>({...x,profit:x.revenue-x.cost,sellThrough:x.pieces?Math.round(x.sold/x.pieces*100):0}))) });
-app.put("/api/admin/orders/:id",auth,(req,res)=>{
+app.put("/api/admin/orders/:id",auth,async(req,res)=>{
  const list=readOrders(),i=list.findIndex(x=>x.id===req.params.id);
  if(i<0)return res.status(404).json({error:"Bestellung nicht gefunden"});
  const allowed=["Bezahlt","Wird verpackt","Versendet","Erledigt","Storniert"];
  if(allowed.includes(req.body?.status))list[i].status=req.body.status;
  if(typeof req.body?.tracking==="string")list[i].tracking=req.body.tracking.trim();
  if(typeof req.body?.carrier==="string")list[i].carrier=req.body.carrier.trim().slice(0,30);
- writeOrders(list);res.json(list[i]);
+ const order=list[i];
+ if(order.status==="Versendet"&&order.tracking&&order.email&&order.shippingEmailSentTracking!==order.tracking&&order.shippingEmailTracking!==order.tracking){
+  order.shippingEmailTracking=order.tracking;order.shippingEmailStatus="pending";order.shippingEmailAttempts=0;delete order.shippingEmailError;
+ }
+ await writeOrders(list);res.json(order);void processPendingOrderEmails();
 });
 app.get("/api/admin/returns",auth,(_req,res)=>res.json(readReturns()));
 app.put("/api/admin/returns/:id",auth,async(req,res)=>{
@@ -381,5 +433,6 @@ async function start(){
   }catch(e){console.error("Neon Startfehler:",e.message);process.exit(1)}
  }else console.warn("DATABASE_URL fehlt - lokale JSON-Daten werden verwendet.");
  app.listen(process.env.PORT||4242,()=>console.log("N best of vintage läuft auf http://localhost:"+(process.env.PORT||4242)));
+ void processPendingOrderEmails();const emailWorker=setInterval(()=>void processPendingOrderEmails(),60000);emailWorker.unref();
 }
 start();
