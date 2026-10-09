@@ -1,18 +1,76 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Retouren — N best of vintage</title><link rel="stylesheet" href="styles.css?v=20261004b">
-<style>.ret{max-width:760px;margin:70px auto;padding:20px}.ret h1{font-size:clamp(48px,9vw,90px);line-height:.9;letter-spacing:-.06em;margin:18px 0 28px}.ret .intro{line-height:1.7;max-width:650px}.return-box{border:1px solid #ddd;padding:28px;margin-top:32px}.return-box label{display:block;font-weight:700;margin:18px 0 7px}.return-box input,.return-box textarea{width:100%;padding:14px;border:1px solid #bbb;background:#fff;font:inherit}.reasons label{font-weight:500;margin:10px 0;display:flex;gap:10px;align-items:center}.reasons input{width:auto}.return-box textarea{min-height:120px;resize:vertical}.notice{background:#f2f2f2;padding:16px;margin:22px 0;font-size:14px;line-height:1.55}.send{border:0;background:#111;color:#fff;padding:16px 22px;font-weight:900;cursor:pointer}.ok{display:none;margin-top:20px;padding:16px;background:#f2f2f2;line-height:1.6}.back{display:inline-block;margin-top:28px;color:inherit}</style><link rel="stylesheet" href="/storefront.css?v=20261004c"></head>
-<body class="nd-store"><header class="site-header"><a class="logo" href="/" aria-label="N best of vintage Startseite">N <span>best of vintage</span></a><nav class="nav" aria-label="Shop-Navigation"><a href="/#shop">Alle Pieces</a><a href="/#categories">Kategorien</a><a href="/drop.html">Drop</a><a href="/suche.html">Suche</a><a href="/favoriten.html">Favoriten</a></nav><a class="shop-back" href="/#shop">← Zurück zum Shop</a></header><main class="ret"><p class="eyebrow">N best of vintage · RETOUREN</p><h1>RÜCKSENDUNG.</h1>
-<p class="intro">Du möchtest einen Artikel zurücksenden? Melde deine Rücksendung hier an. Die Angabe eines Rückgabegrundes ist freiwillig und hilft uns, unseren Shop zu verbessern.</p>
-
-<div class="return-box"><form id="returnForm">
-<label for="order">Bestellnummer</label><input id="order" required placeholder="z. B. ND-12345">
-<label for="email">E-Mail-Adresse</label><input id="email" type="email" required placeholder="deine@email.de">
-<label>Warum möchtest du den Artikel zurücksenden? <small>(freiwillig)</small></label>
-<div class="reasons"><label><input type="radio" name="reason" value="Passt nicht"> Passt nicht</label><label><input type="radio" name="reason" value="Gefällt mir nicht"> Gefällt mir nicht</label><label><input type="radio" name="reason" value="Anders als erwartet"> Anders als erwartet</label><label><input type="radio" name="reason" value="Sonstiges"> Anderer Grund</label></div>
-<div id="otherWrap" hidden><label for="otherText">Dein Grund</label><textarea id="otherText" placeholder="Schreib uns kurz, warum du den Artikel zurücksenden möchtest."></textarea></div>
+<style>
+.ret{max-width:760px;margin:70px auto;padding:20px}
+.ret h1{font-size:clamp(48px,9vw,90px);line-height:.9;letter-spacing:-.06em;margin:18px 0 20px}
+.ret .intro{line-height:1.7;max-width:650px;color:#5c5b56}
+.return-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px 0}
+.return-step{border:1px solid #e4e1da;background:#fff;padding:16px}
+.return-step b{display:block;font-size:11px;letter-spacing:.12em;margin-bottom:8px}
+.return-step span{font-size:13px;line-height:1.5;color:#68665f}
+.return-box{border:1px solid #ddd;background:#fff;padding:clamp(20px,5vw,32px);margin-top:28px}
+.return-box label{display:block;font-weight:700;margin:18px 0 7px}
+.return-box input,.return-box textarea{width:100%;padding:14px;border:1px solid #bbb;background:#fff;font:inherit}
+.return-box input:focus,.return-box textarea:focus{outline:2px solid #26251f;outline-offset:2px}
+.return-box textarea{min-height:110px;resize:vertical}
+.notice{background:#f2f2f2;padding:16px;margin:22px 0;font-size:14px;line-height:1.55}
+.send{border:0;background:#111;color:#fff;padding:16px 22px;font-weight:900;cursor:pointer}
+.send:disabled{opacity:.6;cursor:wait}
+.ok,.error{display:none;margin-top:20px;padding:16px;line-height:1.6}
+.ok{background:#edf5ee}
+.error{background:#fff0ed;color:#8f2517}
+.back{display:inline-block;margin-top:28px;color:inherit}
+@media(max-width:600px){.ret{margin:40px auto}.return-steps{grid-template-columns:1fr}}
+</style><link rel="stylesheet" href="/storefront.css?v=20261004c"></head>
+<body class="nd-store"><header class="site-header"><a class="logo" href="/" aria-label="N best of vintage Startseite">N <span>best of vintage</span></a><nav class="nav" aria-label="Shop-Navigation"><a href="/#shop">Alle Pieces</a><a href="/#categories">Kategorien</a><a href="/drop.html">Drop</a><a href="/suche.html">Suche</a><a href="/favoriten.html">Favoriten</a></nav><a class="shop-back" href="/#shop">← Zurück zum Shop</a></header><main class="ret">
+<p class="eyebrow">N best of vintage · RETOUREN</p>
+<h1>RÜCKSENDUNG.</h1>
+<p class="intro">Du möchtest etwas zurücksenden? Melde deine Rücksendung hier an. Einen Grund musst du nicht angeben. Halte dafür deine Bestellnummer und die E-Mail-Adresse bereit, die du beim Kauf verwendet hast.</p>
+<div class="return-steps" aria-label="So funktioniert die Rücksendung">
+<div class="return-step"><b>01 · BESTELLUNG</b><span>Bestellnummer und Bestell-E-Mail eingeben.</span></div>
+<div class="return-step"><b>02 · ANFRAGE</b><span>Rücksendung absenden – ohne Pflicht zur Begründung.</span></div>
+<div class="return-step"><b>03 · INFO</b><span>Rücksendeinformationen abwarten, bevor du das Paket losschickst.</span></div>
+</div>
+<div class="return-box">
+<form id="returnForm">
+<label for="order">Bestellnummer</label><input id="order" name="order" required autocomplete="off" placeholder="z. B. ND-12345">
+<label for="email">E-Mail-Adresse der Bestellung</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="deine@email.de">
+<label for="details">Welche Artikel möchtest du zurücksenden? <small>(freiwillig)</small></label>
+<textarea id="details" name="details" placeholder="Zum Beispiel: Nike Trackjacket, Größe M"></textarea>
 <div class="notice"><strong>Rücksendekosten:</strong> Bei einem normalen Widerruf trägst du die unmittelbaren Kosten der Rücksendung.</div>
-<button class="send" type="submit">RÜCKSENDUNG ANMELDEN</button></form>
-<div class="ok" id="ok"><strong>Rücksendung erfasst.</strong><br>Bitte sende den Artikel noch nicht los, bis du die Rücksendeadresse bzw. weitere Rücksendeinformationen von N best of vintage erhalten hast.</div></div>
-<a class="back" href="index.html">← Zurück zu N best of vintage</a></main>
-<script>const rs=document.querySelectorAll('input[name="reason"]'),w=document.getElementById('otherWrap');rs.forEach(r=>r.addEventListener('change',()=>{w.hidden=document.querySelector('input[name="reason"]:checked')?.value!=='Sonstiges'}));document.getElementById('returnForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.currentTarget.querySelector('button[type="submit"]');btn.disabled=true;btn.textContent='WIRD GESENDET…';try{const selected=document.querySelector('input[name="reason"]:checked');const res=await fetch('/api/returns',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order:document.getElementById('order').value,email:document.getElementById('email').value,reason:selected?.value||'',details:selected?.value==='Sonstiges'?document.getElementById('otherText').value:''})});const d=await res.json();if(!res.ok)throw new Error(d.error||'Fehler');const ok=document.getElementById('ok');ok.innerHTML='<strong>Rücksendung angemeldet ✓</strong><br>Deine Retourennummer: <b>'+d.id+'</b><br>Bitte sende den Artikel noch nicht los, bis du die Rücksendeinformationen von N best of vintage erhalten hast.';ok.style.display='block';e.currentTarget.reset();w.hidden=true;ok.scrollIntoView({behavior:'smooth'})}catch(err){alert(err.message)}finally{btn.disabled=false;btn.textContent='RÜCKSENDUNG ANMELDEN'}});</script><footer class="store-footer"><a class="logo" href="/">N <span>best of vintage</span></a><nav aria-label="Service"><a href="/retouren.html">Retouren</a><a href="/#faq">Hilfe & Versand</a><a href="/impressum.html">Impressum</a><a href="/datenschutz.html">Datenschutz</a><a href="/agb.html">AGB</a><a href="/widerruf.html">Widerruf</a></nav></footer><script src="/storefront-ui.js?v=20261004c"></script></body></html>
+<button class="send" type="submit">RÜCKSENDUNG ANMELDEN</button>
+</form>
+<p class="error" id="error" role="alert"></p>
+<div class="ok" id="ok" role="status" aria-live="polite"></div>
+</div>
+<a class="back" href="index.html">← Zurück zu N best of vintage</a>
+</main>
+<script>
+const form=document.getElementById('returnForm');
+const button=form.querySelector('button[type="submit"]');
+const statusBox=document.getElementById('ok');
+const errorBox=document.getElementById('error');
+form.addEventListener('submit',async event=>{
+ event.preventDefault();
+ button.disabled=true;
+ button.textContent='WIRD GESENDET…';
+ errorBox.style.display='none';
+ statusBox.style.display='none';
+ try{
+  const response=await fetch('/api/returns',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order:document.getElementById('order').value,email:document.getElementById('email').value,details:document.getElementById('details').value.trim()})});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'Bitte prüfe deine Angaben.');
+  statusBox.textContent='Rücksendung gespeichert. Deine Retourennummer lautet '+result.id+'. Bitte sende den Artikel erst los, wenn du die Rücksendeinformationen erhalten hast.';
+  statusBox.style.display='block';
+  form.reset();
+  statusBox.scrollIntoView({behavior:'smooth',block:'nearest'});
+ }catch(error){
+  errorBox.textContent=error.message||'Die Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.';
+  errorBox.style.display='block';
+ }finally{
+  button.disabled=false;
+  button.textContent='RÜCKSENDUNG ANMELDEN';
+ }
+});
+</script><footer class="store-footer"><a class="logo" href="/">N <span>best of vintage</span></a><nav aria-label="Service"><a href="/retouren.html">Retouren</a><a href="/#faq">Hilfe & Versand</a><a href="/impressum.html">Impressum</a><a href="/datenschutz.html">Datenschutz</a><a href="/agb.html">AGB</a><a href="/widerruf.html">Widerruf</a></nav></footer><script src="/storefront-ui.js?v=20261004c"></script></body></html>
