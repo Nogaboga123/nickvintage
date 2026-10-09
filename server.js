@@ -125,7 +125,7 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
     const aa=readAnalytics();for(const x of parsed){const k=String(x.id);aa[k]=aa[k]||{views:0,favorites:0,carts:0,checkouts:0,purchases:0,events:[]};aa[k].purchases=(aa[k].purchases||0)+Number(x.qty||1);aa[k].events=Array.isArray(aa[k].events)?aa[k].events:[];aa[k].events.push({type:"purchase",at:new Date().toISOString()})}await writeAnalytics(aa);
     const itemsTotal=Math.round(orderItems.reduce((sum,x)=>sum+Number(x.chargedUnitPrice||x.price)*Number(x.qty||1),0)*100)/100,total=Math.round(Number(s.amount_total||0))/100;
     const shipping=s.shipping_details||s.collected_information?.shipping_details||{},address=shipping.address||{};
-    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",customerName:shipping.name||s.customer_details?.name||"",shippingAddress:{line1:String(address.line1||""),line2:String(address.line2||""),postalCode:String(address.postal_code||""),city:String(address.city||""),state:String(address.state||""),country:String(address.country||s.metadata?.shippingCountry||"")},items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(address.country||s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"",test:s.livemode===false,createdAt:new Date().toISOString()});
+    orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",customerName:shipping.name||s.customer_details?.name||"",shippingAddress:{line1:String(address.line1||""),line2:String(address.line2||""),postalCode:String(address.postal_code||""),city:String(address.city||""),state:String(address.state||""),country:String(address.country||s.metadata?.shippingCountry||"")},items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(address.country||s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"DHL",test:s.livemode===false,createdAt:new Date().toISOString()});
     await writeOrders(orders);
    }
   }
@@ -359,7 +359,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   const session=await stripe.checkout.sessions.create({
    mode:"payment",
    line_items,
-   shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser Versand":"Standardversand "+country}}],
+   shipping_address_collection:{allowed_countries:[country]},shipping_options:[{shipping_rate_data:{type:"fixed_amount",fixed_amount:{amount:subtotal>=Number(cfg.shipping?.freeFrom||100)?0:Math.round(Number(cfg.shipping?.[country]??cfg.shipping?.DE??4.99)*100),currency:"eur"},display_name:subtotal>=Number(cfg.shipping?.freeFrom||100)?"Kostenloser DHL Versand":"DHL Paket"}}],
    customer_email:customerEmail||undefined,
    metadata:{items:itemMeta,discountCode:code||"",shippingCountry:country},
    success_url:publicBaseUrl+"/bestellung-erfolgreich.html?session_id={CHECKOUT_SESSION_ID}",
