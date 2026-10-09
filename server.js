@@ -433,10 +433,10 @@ async function start(){
   }catch(e){console.error("Neon Startfehler:",e.message);process.exit(1)}
  }else console.warn("DATABASE_URL fehlt - lokale JSON-Daten werden verwendet.");
  const draftSettings=store.settings||localJson(settingsFile,{});
+ const products=readProducts();
+ const existingBox=products.find(p=>p.code==="MYSTERYBOX");
+ if(existingBox&&!existingBox.image){existingBox.image="/mystery-box.svg";existingBox.images=[existingBox.image];await writeProducts(products)}
  if(draftSettings.mysteryBoxDraftSeededV1!==true){
-  const products=readProducts();
-  const existingBox=products.find(p=>p.code==="MYSTERYBOX");
-  if(existingBox&&!existingBox.image){existingBox.image="/mystery-box.svg";existingBox.images=[existingBox.image];await writeProducts(products)}
   if(!existingBox){
    const id=products.length?Math.max(...products.map(p=>Number(p.id)||0))+1:1;
    products.push({id,name:"N Mystery Box",price:16,oldPrice:0,createdAt:new Date().toISOString(),cat:"Mystery Box",size:"Variabel",condition:"Je nach Inhalt",tag:"N VINTAGE",code:"MYSTERYBOX",color:"",material:"",description:"Die Mystery Box enthält genau 1 zufällig ausgewähltes Teil. Es kann alles aus unserem Vintage-Sortiment sein – lass dich überraschen. Es ist nur 1 Sache in der Box.",drop:"",purchasePrice:0,publishAt:"",stock:0,image:"/mystery-box.svg",images:["/mystery-box.svg"],new:false,status:"sold",hidden:true});
