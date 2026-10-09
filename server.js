@@ -444,6 +444,16 @@ async function start(){
   }
   await persist("settings",{...draftSettings,mysteryBoxDraftSeededV1:true});
  }
+ const currentSettings=store.settings||draftSettings;
+ if(currentSettings.mysteryBoxUnhiddenV1!==true){
+  const currentProducts=readProducts(),box=currentProducts.find(p=>p.code==="MYSTERYBOX");
+  if(box){
+   box.hidden=false;
+   box.comingSoon=true;
+   await writeProducts(currentProducts);
+   await persist("settings",{...currentSettings,mysteryBoxUnhiddenV1:true});
+  }
+ }
  app.listen(process.env.PORT||4242,()=>console.log("N best of vintage läuft auf http://localhost:"+(process.env.PORT||4242)));
  void processPendingOrderEmails();const emailWorker=setInterval(()=>void processPendingOrderEmails(),60000);emailWorker.unref();
 }
