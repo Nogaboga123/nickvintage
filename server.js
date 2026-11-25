@@ -246,6 +246,13 @@ const sitemapBaseUrl=sitemapBaseUrlRaw.endsWith("/")?sitemapBaseUrlRaw.slice(0,-
 app.get("/robots.txt",(_req,res)=>res.set("Cache-Control","public, max-age=300, must-revalidate").type("text/plain").send(["User-agent: Googlebot","Allow: /","Disallow: /admin.html","Disallow: /data/","","User-agent: Google-InspectionTool","Allow: /","Disallow: /admin.html","Disallow: /data/","","User-agent: *","Allow: /","Disallow: /admin.html","Disallow: /data/","Sitemap: "+sitemapBaseUrl+"/sitemap.xml",""].join(String.fromCharCode(10))));
 app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...["tracksuits","trackpants","jacken","hoodies","sweater","jeans","shirts"].map(cat=>"/kategorie.html?cat="+cat),...readProducts().filter(p=>!p.hidden&&p.status!=="sold"&&(!p.publishAt||new Date(p.publishAt).getTime()<=Date.now())).map(p=>"/produkt.html?id="+encodeURIComponent(p.id))];res.type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls.map(u=>"<url><loc>"+sitemapBaseUrl+u+"</loc></url>").join("")+"</urlset>")});
 
+app.use((req,res,next)=>{
+ if(req.path!=="/sniper.html")return next();
+ const token=req.cookies?.nv_sniper_access;
+ const member=token&&readSniperMembers().find(x=>x.active&&x.accessToken===token);
+ if(!member)return res.redirect("/sniper-kaufen.html?access=required");
+ next();
+});
 app.use(express.static(__dirname,{index:false}));
 app.post("/api/early-access",express.urlencoded({extended:false}),async(req,res)=>{
  const settings=readSettings();
@@ -277,6 +284,13 @@ app.post("/api/sniper/payment-requests",async(req,res)=>{
  const list=readSniperPayments();list.unshift(item);await writeSniperPayments(list);
  res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,bankName:bank.bankName||"",iban:bank.iban,bic:bank.bic||"",instructions:bank.instructions||""}});
 });
+app.post("/api/sniper/redeem",(req,res)=>{
+ const code=String(req.body?.code||"").trim().toUpperCase();
+ const member=readSniperMembers().find(x=>x.active&&x.accessToken===code);
+ if(!member)return res.status(401).json({error:"Zugangscode ungültig. Bitte prüfe den Code oder kontaktiere den Betreiber."});
+ res.cookie("nv_sniper_access",code,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
+ res.json({ok:true});
+});
 app.get("/api/sniper/payment-requests/:id", (req,res)=>{
  const item=readSniperPayments().find(x=>x.id===req.params.id);
  if(!item)return res.status(404).json({error:"Anfrage nicht gefunden."});
@@ -299,7 +313,7 @@ app.put("/api/sniper/admin/payments/:id",auth,async(req,res)=>{
  list[i].status=status;list[i].updatedAt=new Date().toISOString();await writeSniperPayments(list);
  if(status==="paid"){
   const members=readSniperMembers(),email=list[i].email;
-  if(!members.some(x=>x.email===email))members.unshift({email,active:true,plan:"lifetime",amountCents:2500,activatedAt:new Date().toISOString(),paymentReference:list[i].reference});
+  if(!members.some(x=>x.email===email))members.unshift({email,active:true,plan:"lifetime",amountCents:2500,accessToken:crypto.randomBytes(12).toString("hex").toUpperCase(),activatedAt:new Date().toISOString(),paymentReference:list[i].reference});
   await writeSniperMembers(members);
  }
  res.json({ok:true,payment:list[i]});
