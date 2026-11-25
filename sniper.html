@@ -35,7 +35,8 @@
 <section class="panel"><div class="panelhead"><div><div class="step">04 / PHOTO LAB</div><h2>Dein Foto-Workflow</h2><p class="sub">Mach deine Produktbilder bereit für ein sauberes Listing.</p></div></div>
 <div class="toolcard"><b>✦ KI-Bildbearbeitung</b><p>Für einen neuen Hintergrund, freigestellte Produkte oder ein KI-generiertes Setting wird eine Bild-KI-Anbindung benötigt. Die Originalfotos bleiben unverändert.</p><button class="btn secondary" id="photoPrompt" style="margin-top:11px">BEARBEITUNGSPROMPT ERSTELLEN</button></div>
 <div class="toolcard" style="margin-top:9px"><b>☼ Foto-Look verbessern</b><p>Eine dezente lokale Optimierung für Helligkeit, Kontrast und Farbe – ohne Produktdetails zu verändern.</p><div class="field" style="margin-top:10px"><label for="look">Look</label><select id="look"><option value="none">Original</option><option value="bright">Hell & clean</option><option value="warm">Warm vintage</option><option value="contrast">Mehr Kontrast</option></select></div><button class="btn secondary" id="applyLook">LOOK AUF VORSCHAU ANWENDEN</button></div>
-<div class="notice">Wichtig: KI-Bildgenerierung und echtes KI-Background-Removal sind noch nicht mit einem Bild-KI-Dienst verbunden. Der Prompt hilft dir, den gewünschten Look mit einem KI-Bildtool umzusetzen. Keine falschen Produktmerkmale oder verschwiegene Mängel darstellen.</div>
+<div class="toolcard" style="margin-top:9px"><b>✦ Echte KI-Bildbearbeitung</b><p>Bearbeite dein erstes Produktfoto direkt hier: transparenter Hintergrund oder neutrales Studio-Setting. Das Original bleibt unverändert.</p><div class="actions"><button class="btn" id="removeBg">HINTERGRUND ENTFERNEN</button><button class="btn secondary" id="studioBg">STUDIO-HINTERGRUND</button></div><p id="aiStatus" class="hint" aria-live="polite">Wähle links mindestens ein Foto aus. Die KI-Bearbeitung benötigt einen konfigurierten API-Schlüssel.</p><div id="aiResult" class="preview" style="display:none;margin-top:10px"><h3>KI-Ergebnis</h3><img id="aiImage" alt="KI-bearbeitetes Produktfoto" style="display:block;width:100%;max-height:420px;object-fit:contain;border-radius:8px;background:#090e10"><div class="actions"><a id="downloadAi" class="btn" download="vinted-ai-bild.png" style="text-decoration:none;display:inline-block">ERGEBNIS SPEICHERN</a></div></div></div>
+<div class="notice">Bitte prüfe jedes KI-Ergebnis vor dem Hochladen. Produktfarbe, Form, Logos und sichtbare Gebrauchsspuren müssen dem Original entsprechen. KI kann Details verändern.</div>
 </section>
 <section class="panel"><div class="panelhead"><div><div class="step">05 / LISTING CHECK</div><h2>Vor dem Hochladen</h2></div></div>
 <div class="preview"><h3>Dein Qualitäts-Check</h3><div id="checks"><span class="tag">Fotos fehlen</span><span class="tag">Details fehlen</span><span class="tag">Text fehlt</span></div><p style="margin-top:9px">Zeige den tatsächlichen Zustand, fotografiere Etiketten und Mängel und prüfe Größe sowie Marke vor dem Veröffentlichen.</p></div>
@@ -55,6 +56,26 @@ function makePrompt(){const x=fields();return "Du bist ein professioneller Vinte
 $("prompt").onclick=async()=>{const p=makePrompt();$("description").value=p;$("message").textContent="KI-Prompt steht im Beschreibungsfeld. Kopiere ihn in deinen KI-Assistenten."};
 $("photoPrompt").onclick=async()=>{const x=fields();const p="Bearbeite das hochgeladene Kleidungsstückfoto für ein realistisches Vinted-Produktlisting. Erhalte exakt das Kleidungsstück, seine Farbe, Form, Logos, Nähte, Textur und alle Gebrauchsspuren. Verändere nicht den Zustand und entferne keine Mängel. Ersetze nur den unruhigen Hintergrund durch einen hellen, neutralen, stilvollen Studiohintergrund mit weichem Tageslicht. Keine zusätzlichen Gegenstände, kein Text, keine Wasserzeichen. Produkt: "+[x.brand,x.type,x.color,x.size].filter(Boolean).join(", ");$("description").value=p;$("message").textContent="Bildbearbeitungs-Prompt erstellt. Nutze ihn zusammen mit einem deiner Fotos in einem Bild-KI-Tool."};
 $("applyLook").onclick=()=>{look=$("look").value;drawPhotos();$("message").textContent="Vorschau-Look angewendet. Originaldateien bleiben unverändert."};
+async function editProductPhoto(mode){
+ if(!files.length){$("aiStatus").textContent="Bitte zuerst mindestens ein Produktfoto hochladen.";return}
+ const buttons=[$("removeBg"),$("studioBg")];buttons.forEach(b=>b.disabled=true);
+ $("aiStatus").textContent="KI bearbeitet dein Foto … Das kann bis zu einer Minute dauern.";
+ $("aiResult").style.display="none";
+ try{
+  const data=new FormData();data.append("image",files[0],files[0].name);data.append("mode",mode);
+  const x=fields();data.append("product",[x.brand,x.type,x.color,x.size].filter(Boolean).join(", "));
+  const response=await fetch("/sniper.html/api/image-edit",{method:"POST",body:data});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Bildbearbeitung fehlgeschlagen.");
+  $("aiImage").src=result.image;$("downloadAi").href=result.image;
+  $("aiResult").style.display="block";
+  $("aiStatus").textContent=mode==="background"?"Hintergrund entfernt. Das Ergebnis hat einen transparenten PNG-Hintergrund.":"Studio-Hintergrund erstellt. Bitte Ergebnis mit dem Original vergleichen.";
+ }catch(error){$("aiStatus").textContent=error.message}
+ finally{buttons.forEach(b=>b.disabled=false)}
+}
+$("removeBg").onclick=()=>editProductPhoto("background");
+$("studioBg").onclick=()=>editProductPhoto("studio");
+
 async function copy(s){if(!s)return false;try{await navigator.clipboard.writeText(s);return true}catch{return false}}
 $("copyAll").onclick=async()=>{if(await copy($("title").value+"\n\n"+$("description").value))$("message").textContent="Titel und Beschreibung kopiert.";else $("message").textContent="Bitte Text markieren und kopieren."};
 $("copyDesc").onclick=async()=>{$("message").textContent=await copy($("description").value)?"Beschreibung kopiert.":"Bitte Text markieren und kopieren."};
