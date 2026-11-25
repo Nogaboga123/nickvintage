@@ -272,6 +272,38 @@ function auth(req,res,next){
  next();
 }
 
+// Vinted AI Tool: echte, serverseitige Bildbearbeitung. Der Zugang wird über die bestehende Mitgliedschaft geprüft.
+const imageUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:12*1024*1024},fileFilter:(_req,file,cb)=>cb(null,/^image\/(jpeg|png|webp)$/.test(file.mimetype))});
+app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res)=>{
+ const token=req.cookies?.nv_sniper_access;
+ const member=token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));
+ if(!member)return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
+ if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die KI-Bildbearbeitung ist vorbereitet, aber der OpenAI-API-Schlüssel fehlt noch in Render (OPENAI_API_KEY)."});
+ if(!req.file)return res.status(400).json({error:"Bitte zuerst ein JPG-, PNG- oder WEBP-Foto auswählen."});
+ const mode=String(req.body?.mode||"background");
+ if(!["background","studio"].includes(mode))return res.status(400).json({error:"Unbekannter Bearbeitungsmodus."});
+ const product=String(req.body?.product||"").slice(0,300);
+ const prompt=mode==="background"
+  ? "Remove only the background from this exact product photograph and return the product as a clean, accurately isolated cutout on a fully transparent background. Preserve the product exactly: same shape, proportions, color, material, texture, logos, labels, seams, shadows that belong to the product, and every visible defect or sign of wear. Do not repair, beautify, recolor, redesign, add, remove, or invent any product detail. Do not add text, props, or watermark. Product context: "+product
+  : "Edit this exact product photograph for a realistic second-hand fashion marketplace listing. Keep the product absolutely faithful to the source: preserve exact shape, proportions, color, fabric texture, logos, labels, seams, and every visible defect or sign of wear. Change only the surrounding background to a clean, light neutral studio backdrop with soft natural daylight. Do not retouch or improve the item, do not hide defects, do not add props, text, or watermark. Product context: "+product;
+ try{
+  const form=new FormData();
+  form.append("model","gpt-image-2.5-sunburst");
+  form.append("prompt",prompt);
+  form.append("size","1024x1024");
+  form.append("quality","high");
+  form.append("output_format","png");
+  if(mode==="background")form.append("background","transparent");
+  form.append("image",new Blob([req.file.buffer],{type:req.file.mimetype}),req.file.originalname||"product-image.png");
+  const response=await fetch("https://api.openai.com/v1/images/edits",{method:"POST",headers:{Authorization:"Bearer "+process.env.OPENAI_API_KEY},body:form,signal:AbortSignal.timeout(180000)});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok){console.error("OpenAI image edit failed:",response.status,data.error?.message||"");return res.status(response.status===429?429:502).json({error:data.error?.message||"Die Bild-KI konnte das Foto gerade nicht bearbeiten. Bitte später erneut versuchen."});}
+  const encoded=data.data?.[0]?.b64_json;
+  if(!encoded)return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});
+  res.set("Cache-Control","no-store");
+  res.json({image:"data:image/png;base64,"+encoded,mode,model:"gpt-image-2.5-sunburst"});
+ }catch(error){console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
+});
 // Sniper: manuelle Einmalzahlung und lebenslange Freischaltung (ohne Zahlungsanbieter).
 app.post("/api/sniper/payment-requests",async(req,res)=>{
  const email=String(req.body?.email||"").trim().toLowerCase();
