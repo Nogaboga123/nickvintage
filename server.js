@@ -22,6 +22,10 @@ const returnsFile=path.join(dataDir,"returns.json");
 const ordersFile=path.join(dataDir,"orders.json");
 const subscribersFile=path.join(dataDir,"subscribers.json");
 const analyticsFile=path.join(dataDir,"analytics.json");
+const sniperPaymentsFile=path.join(dataDir,"sniper-payments.json");
+const sniperMembersFile=path.join(dataDir,"sniper-members.json");
+const sniperSettingsFile=path.join(dataDir,"sniper-settings.json");
+for(const [file,seed] of [[sniperPaymentsFile,"[]"],[sniperMembersFile,"[]"],[sniperSettingsFile,"{}"]])if(!fs.existsSync(file))fs.writeFileSync(file,seed);
 if(!fs.existsSync(returnsFile)) fs.writeFileSync(returnsFile,"[]");
 if(!fs.existsSync(ordersFile)) fs.writeFileSync(ordersFile,"[]");
 if(!fs.existsSync(subscribersFile)) fs.writeFileSync(subscribersFile,"[]");
@@ -81,6 +85,12 @@ const readSubscribers=()=>store.subscribers||localJson(subscribersFile,[]);
 const writeSubscribers=x=>persist("subscribers",x);
 const readAnalytics=()=>store.analytics||localJson(analyticsFile,{});
 const writeAnalytics=x=>persist("analytics",x);
+const readSniperPayments=()=>store.sniperPayments||localJson(sniperPaymentsFile,[]);
+const writeSniperPayments=async value=>{await persist("sniperPayments",value);if(!pool)fs.writeFileSync(sniperPaymentsFile,JSON.stringify(value,null,2));};
+const readSniperMembers=()=>store.sniperMembers||localJson(sniperMembersFile,[]);
+const writeSniperMembers=async value=>{await persist("sniperMembers",value);if(!pool)fs.writeFileSync(sniperMembersFile,JSON.stringify(value,null,2));};
+const readSniperSettings=()=>store.sniperSettings||localJson(sniperSettingsFile,{});
+const writeSniperSettings=async value=>{await persist("sniperSettings",value);if(!pool)fs.writeFileSync(sniperSettingsFile,JSON.stringify(value,null,2));};
 const adminPasswordHash=process.env.ADMIN_PASSWORD_HASH||null;
 const adminPassword=process.env.ADMIN_PASSWORD||"";
 const sessions=new Map();
@@ -254,6 +264,47 @@ function auth(req,res,next){
  }
  next();
 }
+
+// Sniper: manuelle Einmalzahlung und lebenslange Freischaltung (ohne Zahlungsanbieter).
+app.post("/api/sniper/payment-requests",async(req,res)=>{
+ const email=String(req.body?.email||"").trim().toLowerCase();
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)return res.status(400).json({error:"Bitte eine gültige E-Mail-Adresse eingeben."});
+ const bank=readSniperSettings();
+ if(!bank.iban||!bank.accountHolder)return res.status(503).json({error:"Die Zahlungsdaten sind noch nicht eingerichtet. Bitte später erneut versuchen."});
+ const id=crypto.randomBytes(16).toString("hex");
+ const reference="SNIPER-"+crypto.randomBytes(4).toString("hex").toUpperCase();
+ const item={id,reference,email,amountCents:2500,status:"pending",createdAt:new Date().toISOString()};
+ const list=readSniperPayments();list.unshift(item);await writeSniperPayments(list);
+ res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,bankName:bank.bankName||"",iban:bank.iban,bic:bank.bic||"",instructions:bank.instructions||""}});
+});
+app.get("/api/sniper/payment-requests/:id", (req,res)=>{
+ const item=readSniperPayments().find(x=>x.id===req.params.id);
+ if(!item)return res.status(404).json({error:"Anfrage nicht gefunden."});
+ res.json({status:item.status,reference:item.reference,email:item.email});
+});
+app.get("/api/sniper/admin/overview",auth,(_req,res)=>res.json({payments:readSniperPayments(),members:readSniperMembers(),bank:readSniperSettings()}));
+app.put("/api/sniper/admin/settings",auth,async(req,res)=>{
+ const b=req.body||{};
+ const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\\s+/g,"").toUpperCase().slice(0,34),bic:String(b.bic||"").replace(/\\s+/g,"").toUpperCase().slice(0,11),instructions:String(b.instructions||"").trim().slice(0,500)};
+ if(next.iban&&!/^[A-Z]{2}[0-9A-Z]{13,32}$/.test(next.iban))return res.status(400).json({error:"Bitte eine gültige IBAN eingeben."});
+ if(!next.accountHolder||!next.iban)return res.status(400).json({error:"Kontoinhaber und IBAN sind erforderlich."});
+ await writeSniperSettings(next);res.json({ok:true,bank:next});
+});
+app.put("/api/sniper/admin/payments/:id",auth,async(req,res)=>{
+ const list=readSniperPayments(),i=list.findIndex(x=>x.id===req.params.id);
+ if(i<0)return res.status(404).json({error:"Zahlungsanfrage nicht gefunden."});
+ const status=String(req.body?.status||"");
+ if(!["paid","rejected"].includes(status))return res.status(400).json({error:"Ungültiger Status."});
+ if(list[i].status==="paid"&&status!=="paid")return res.status(409).json({error:"Eine bestätigte Zahlung kann hier nicht zurückgesetzt werden."});
+ list[i].status=status;list[i].updatedAt=new Date().toISOString();await writeSniperPayments(list);
+ if(status==="paid"){
+  const members=readSniperMembers(),email=list[i].email;
+  if(!members.some(x=>x.email===email))members.unshift({email,active:true,plan:"lifetime",amountCents:2500,activatedAt:new Date().toISOString(),paymentReference:list[i].reference});
+  await writeSniperMembers(members);
+ }
+ res.json({ok:true,payment:list[i]});
+});
+
 app.get("/api/public-settings",(_req,res)=>{const x=readSettings();res.json({dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100}})});
 app.get("/api/site-settings",auth,(req,res)=>{const x=readSettings();res.json({siteOpen:!!x.siteOpen,dropName:x.dropName||"DROP 01",dropDate:x.dropDate||"",shipping:x.shipping||{DE:4.99,AT:8.99,CH:12.99,freeFrom:100},discount:x.discount||{code:"",percent:0,active:false}})});
 app.put("/api/site-settings",auth,async(req,res)=>{
@@ -421,13 +472,15 @@ app.post("/api/create-checkout-session",async(req,res)=>{
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
 app.get("/sniper.html",(req,res)=>res.sendFile(path.join(__dirname,"sniper.html")));
+app.get("/sniper-admin.html",(req,res)=>res.sendFile(path.join(__dirname,"sniper-admin.html")));
+app.get("/sniper-kaufen.html",(req,res)=>res.sendFile(path.join(__dirname,"sniper-kaufen.html")));
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
 async function start(){
  if(pool){
   try{
-   const {rows}=await pool.query("SELECT key,value FROM shop_data WHERE key = ANY($1)",[["products","settings","returns","orders","subscribers","analytics","adminSessions"]]);
+   const {rows}=await pool.query("SELECT key,value FROM shop_data WHERE key = ANY($1)",[["products","settings","returns","orders","subscribers","analytics","adminSessions","sniperPayments","sniperMembers","sniperSettings"]]);
    for(const row of rows)store[row.key]=row.value;
-   const seeds={adminSessions:{},products:localJson(dbFile,[]),settings:localJson(settingsFile,{}),returns:localJson(returnsFile,[]),orders:localJson(ordersFile,[]),subscribers:localJson(subscribersFile,[]),analytics:localJson(analyticsFile,{})};
+   const seeds={adminSessions:{},products:localJson(dbFile,[]),settings:localJson(settingsFile,{}),returns:localJson(returnsFile,[]),orders:localJson(ordersFile,[]),subscribers:localJson(subscribersFile,[]),analytics:localJson(analyticsFile,{}),sniperPayments:localJson(sniperPaymentsFile,[]),sniperMembers:localJson(sniperMembersFile,[]),sniperSettings:localJson(sniperSettingsFile,{})};
    for(const [key,value] of Object.entries(seeds))if(!(key in store)){await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO NOTHING",[key,JSON.stringify(value)]);store[key]=value}
    runtimeSettings=null;
    console.log("Neon-Datenbank verbunden.");
