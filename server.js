@@ -289,7 +289,7 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
   : "Edit this exact product photograph for a realistic second-hand fashion marketplace listing. Keep the product absolutely faithful to the source: preserve exact shape, proportions, color, fabric texture, logos, labels, seams, and every visible defect or sign of wear. Change only the surrounding background to a clean, light neutral studio backdrop with soft natural daylight. Do not retouch or improve the item, do not hide defects, do not add props, text, or watermark. Product context: "+product;
  try{
   const form=new FormData();
-  form.append("model","gpt-image-2.5-sunburst");
+  form.append("model","gpt-image-2.6-sunburst");
   form.append("prompt",prompt);
   form.append("size","1024x1024");
   form.append("quality","high");
