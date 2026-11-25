@@ -39,7 +39,7 @@
 <section class="panel"><div class="panelhead"><div><div class="step">KI-BILDERSTUDIO</div><h2>Mach mehr aus deinem Produktfoto</h2><p class="sub">Wähle einen fertigen Stil oder beschreibe genau, was du sehen möchtest.</p></div></div>
 
 <div class="toolcard" style="margin-top:9px"><b>☼ Vorschau-Look</b><p>Eine dezente lokale Optimierung für Helligkeit, Kontrast und Farbe – ohne Produktdetails zu verändern.</p><div class="field" style="margin-top:10px"><label for="look">Look</label><select id="look"><option value="none">Original</option><option value="bright">Hell & clean</option><option value="warm">Warm vintage</option><option value="contrast">Mehr Kontrast</option></select></div><button class="btn secondary" id="applyLook">LOOK AUF VORSCHAU ANWENDEN</button></div>
-<div class="toolcard" style="margin-top:12px"><b>✦ KI-FOTO STUDIO</b><p>Lass dein Kleidungsstück von einem virtuellen Model tragen, erstelle ein Lifestyle-Foto oder beschreibe deinen eigenen Bildwunsch.</p><div class="actions"><button class="btn" id="modelPhoto">AN EINEM MODEL</button><button class="btn secondary" id="lifestylePhoto">LIFESTYLE FOTO</button><button class="btn secondary" id="removeBg">HINTERGRUND ENTFERNEN</button><button class="btn secondary" id="studioBg">STUDIO-HINTERGRUND</button></div><div class="field" style="margin-top:10px"><label for="imageCustom">Oder: Was soll auf dem Bild passieren?</label><textarea id="imageCustom" placeholder="z. B. Frau trägt diese Hose, Ganzkörperfoto, heller minimalistischer Hintergrund …" style="min-height:75px"></textarea></div><button class="btn secondary" id="customPhoto" style="margin-top:8px">EIGENEN BILDPROMPT AUSFÜHREN</button><p id="aiStatus" class="hint" aria-live="polite">Wähle links ein Produktfoto aus. Die KI erstellt daraus ein neues Bild.</p><div id="aiResult" class="preview" style="display:none;margin-top:10px"><h3>KI-Ergebnis</h3><img id="aiImage" alt="KI-bearbeitetes Produktfoto" style="display:block;width:100%;max-height:420px;object-fit:contain;border-radius:8px;background:#090e10"><div class="actions"><a id="downloadAi" class="btn" download="vinted-ai-bild.png" style="text-decoration:none;display:inline-block">ERGEBNIS SPEICHERN</a></div></div></div>
+<div class="toolcard" style="margin-top:12px"><b>✦ IMAGE STUDIO</b><p>Wähle aus, wie dein Artikel gezeigt werden soll. Das erste hochgeladene Foto ist die Produktreferenz.</p><div class="mode-grid"><button type="button" class="mode-option active" data-mode="model" id="modelPhoto"><span>◉</span> Model-Foto</button><button type="button" class="mode-option" data-mode="lifestyle" id="lifestylePhoto"><span>⌁</span> Lifestyle</button><button type="button" class="mode-option" data-mode="background" id="removeBg"><span>◫</span> Freistellen</button><button type="button" class="mode-option" data-mode="studio" id="studioBg"><span>▧</span> Studio-Foto</button></div><div class="fields" style="margin-top:13px"><div class="field"><label for="modelGender">Model</label><select id="modelGender"><option value="woman">Frau</option><option value="man">Mann</option><option value="nonbinary">Androgyn</option></select></div><div class="field"><label for="modelBody">Körperbau</label><select id="modelBody"><option value="average">Durchschnittlich</option><option value="slim">Schlank</option><option value="athletic">Sportlich</option><option value="curvy">Curvy</option></select></div><div class="field"><label for="modelPose">Pose</label><select id="modelPose"><option value="full-body natural standing">Ganzkörper · stehend</option><option value="mirror selfie">Mirror Selfie</option><option value="casual walking">Natürlich gehend</option><option value="three-quarter portrait">3/4 Ansicht</option></select></div><div class="field"><label for="modelScene">Hintergrund</label><select id="modelScene"><option value="minimal bright studio">Helles Studio</option><option value="neutral apartment">Neutrale Wohnung</option><option value="urban street style">Urban Street</option><option value="clean white wall">Weiße Wand</option></select></div></div><div class="field" style="margin-top:11px"><label for="imageCustom">Eigener Wunsch (optional)</label><textarea id="imageCustom" placeholder="z. B. Oversized Jeansjacke, Model mit weißen Sneakern, natürliche Tageslichtaufnahme …" style="min-height:68px"></textarea></div><button class="btn" id="runImage" style="width:100%;margin-top:11px">✦ FOTO GENERIEREN</button><p id="aiStatus" class="hint" aria-live="polite">Wähle links ein Produktfoto und dann deinen Bildstil.</p><div id="aiResult" class="preview" style="display:none;margin-top:10px"><h3>KI-Ergebnis</h3><img id="aiImage" alt="KI-bearbeitetes Produktfoto" style="display:block;width:100%;max-height:420px;object-fit:contain;border-radius:8px;background:#090e10"><div class="actions"><a id="downloadAi" class="btn" download="vinted-ai-bild.png" style="text-decoration:none;display:inline-block">ERGEBNIS SPEICHERN</a></div></div></div>
 <div class="notice">Bitte prüfe jedes KI-Ergebnis vor dem Hochladen. Produktfarbe, Form, Logos und sichtbare Gebrauchsspuren müssen dem Original entsprechen. KI kann Details verändern.</div>
 </section>
 <section class="panel"><div class="panelhead"><div><div class="step">LETZTER SCHRITT</div><h2>Qualitäts-Check</h2></div></div>
@@ -79,28 +79,24 @@ async function writeWithAI(){
  finally{btn.disabled=false}
 }
 $("aiWrite").onclick=writeWithAI;
+let selectedImageMode="model";
+document.querySelectorAll("[data-mode]").forEach(btn=>btn.addEventListener("click",()=>{selectedImageMode=btn.dataset.mode;document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x===btn));}));
 async function editProductPhoto(mode){
- if(!files.length){$("aiStatus").textContent="Bitte zuerst mindestens ein Produktfoto hochladen.";return}
- const buttons=[$("removeBg"),$("studioBg"),$("modelPhoto"),$("lifestylePhoto"),$("customPhoto")];buttons.forEach(b=>b.disabled=true);
- $("aiStatus").textContent="KI bearbeitet dein Foto … Das kann bis zu einer Minute dauern.";
- $("aiResult").style.display="none";
+ if(!files.length){$("aiStatus").textContent="Bitte zuerst ein Produktfoto hochladen.";return}
+ const btn=$("runImage");btn.disabled=true;btn.textContent="KI GENERIERT …";$("aiStatus").textContent="Dein Bild wird erstellt. Das kann einen Moment dauern.";$("aiResult").style.display="none";
  try{
   const data=new FormData();data.append("image",files[0],files[0].name);data.append("mode",mode);data.append("custom",$("imageCustom").value);
+  ["modelGender","modelBody","modelPose","modelScene"].forEach(id=>data.append(id,$(id).value));
   const x=fields();data.append("product",[x.brand,x.type,x.color,x.size].filter(Boolean).join(", "));
-  const response=await fetch("/sniper.html/api/image-edit",{method:"POST",body:data});
-  const result=await response.json().catch(()=>({}));
+  const response=await fetch("/sniper.html/api/image-edit",{method:"POST",body:data});const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||"Bildbearbeitung fehlgeschlagen.");
-  $("aiImage").src=result.image;$("downloadAi").href=result.image;
-  $("aiResult").style.display="block";
-  $("aiStatus").textContent=mode==="background"?"Hintergrund entfernt. Das Ergebnis hat einen transparenten PNG-Hintergrund.":mode==="model"?"Modelbild erstellt. Prüfe, ob das Kleidungsstück originalgetreu dargestellt ist.":mode==="lifestyle"?"Lifestyle-Bild erstellt. Bitte Produktdetails mit dem Original vergleichen.":mode==="custom"?"Dein Wunschbild wurde erstellt. Bitte Ergebnis prüfen.":"Studio-Hintergrund erstellt. Bitte Ergebnis mit dem Original vergleichen.";
+  $("aiImage").src=result.image;$("downloadAi").href=result.image;$("aiResult").style.display="block";
+  $("aiStatus").textContent="Fertig! Vergleiche Farbe, Schnitt, Logo und Gebrauchsspuren mit deinem Original.";
  }catch(error){$("aiStatus").textContent=error.message}
- finally{buttons.forEach(b=>b.disabled=false)}
+ finally{btn.disabled=false;btn.textContent="✦ FOTO GENERIEREN"}
 }
-$("removeBg").onclick=()=>editProductPhoto("background");
-$("modelPhoto").onclick=()=>editProductPhoto("model");
-$("lifestylePhoto").onclick=()=>editProductPhoto("lifestyle");
-$("customPhoto").onclick=()=>editProductPhoto("custom");
-$("studioBg").onclick=()=>editProductPhoto("studio");
+$("runImage").onclick=()=>editProductPhoto(selectedImageMode);
+
 
 async function copy(s){if(!s)return false;try{await navigator.clipboard.writeText(s);return true}catch{return false}}
 $("copyAll").onclick=async()=>{if(await copy($("title").value+"\n\n"+$("description").value))$("message").textContent="Titel und Beschreibung kopiert.";else $("message").textContent="Bitte Text markieren und kopieren."};
