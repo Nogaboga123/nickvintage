@@ -420,6 +420,7 @@ app.post("/api/create-checkout-session",async(req,res)=>{
   res.json({url:session.url});
  }catch(e){console.error(e);res.status(500).json({error:"Checkout konnte nicht erstellt werden."})}
 });
+app.get("/sniper.html",(req,res)=>res.sendFile(path.join(__dirname,"sniper.html")));
 app.get("*",(req,res)=>{if(req.path.startsWith("/api/"))return res.status(404).end();res.sendFile(path.join(__dirname,"index.html"))});
 async function start(){
  if(pool){
