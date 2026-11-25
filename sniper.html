@@ -37,7 +37,16 @@
 <div class="note">Es werden keine erfundenen Angebote angezeigt. Derzeit gibt es keine automatische Vinted-Abfrage, keinen Passwort- oder Session-Cookie-Import und keinen automatischen Kauf.</div>
 </section>
 <section class="panel"><div class="feedhead"><div><h2>Deine Filter</h2><p class="desc" style="margin:5px 0 0">Gespeicherte Suchprofile auf diesem Gerät.</p></div><button class="btn ghost" id="clearFilters" type="button">ALLE LÖSCHEN</button></div><div class="saved" id="saved"><div class="empty">Noch keine Filter gespeichert.</div></div></section>
-<section class="panel"><h2>Konto verbinden</h2><p class="desc">Vinted-Verbindung noch nicht verfügbar. Ein Login-Button wird erst aktiviert, wenn eine sichere, zulässige Verbindung implementiert werden kann. Gib dein Vinted-Passwort niemals auf einer nachgebauten Login-Seite ein.</p><div class="right"><button class="btn secondary" disabled>VINTED VERBINDEN</button><span class="mini">Nicht verbunden</span></div></section>
+<section class="panel" id="vinted-connect">
+<div class="feedhead"><div><h2>Vinted-Konto verbinden</h2><p class="desc" style="margin:5px 0 0">Verbindungsbereich vorbereitet – dein Konto ist aktuell noch nicht verbunden.</p></div><span class="status">● NICHT VERBUNDEN</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0">
+<div class="stat"><b style="font-size:14px">01 · Autorisierung</b><span>Offizieller Vinted-Zugang erforderlich</span></div>
+<div class="stat"><b style="font-size:14px">02 · Verbindung</b><span>Status wird nach Freigabe angezeigt</span></div>
+<div class="stat"><b style="font-size:14px">03 · Trennen</b><span>Verbindung später jederzeit beenden</span></div>
+</div>
+<div class="right" style="flex-wrap:wrap"><button class="btn secondary" type="button" disabled title="Wird nach Einrichtung einer offiziellen Vinted-Schnittstelle aktiviert">VINTED VERBINDEN</button><button class="btn ghost" type="button" disabled>TRENNEN</button><span class="mini">Noch nicht aktiviert</span></div>
+<div class="note">Die Oberfläche ist vorbereitet. Eine echte Kontoanmeldung und Live-Angebote sind noch nicht eingerichtet, da dafür eine von Vinted unterstützte Schnittstelle benötigt wird. Gib dein Vinted-Passwort oder Session-Cookies niemals hier ein.</div>
+</section>
 </main></div><footer class="footer">N Vintage Sniper · Unabhängiges Projekt, nicht mit Vinted verbunden oder von Vinted unterstützt.</footer></div>
 <script>
 const $=id=>document.getElementById(id),KEY="nv-sniper-filters-v1";let countries=["DE"];
