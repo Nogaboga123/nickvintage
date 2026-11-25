@@ -268,7 +268,7 @@ function auth(req,res,next){
 // Sniper: manuelle Einmalzahlung und lebenslange Freischaltung (ohne Zahlungsanbieter).
 app.post("/api/sniper/payment-requests",async(req,res)=>{
  const email=String(req.body?.email||"").trim().toLowerCase();
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)return res.status(400).json({error:"Bitte eine gültige E-Mail-Adresse eingeben."});
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return res.status(400).json({error:"Bitte eine gültige E-Mail-Adresse eingeben."});
  const bank=readSniperSettings();
  if(!bank.iban||!bank.accountHolder)return res.status(503).json({error:"Die Zahlungsdaten sind noch nicht eingerichtet. Bitte später erneut versuchen."});
  const id=crypto.randomBytes(16).toString("hex");
@@ -285,7 +285,7 @@ app.get("/api/sniper/payment-requests/:id", (req,res)=>{
 app.get("/api/sniper/admin/overview",auth,(_req,res)=>res.json({payments:readSniperPayments(),members:readSniperMembers(),bank:readSniperSettings()}));
 app.put("/api/sniper/admin/settings",auth,async(req,res)=>{
  const b=req.body||{};
- const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\\s+/g,"").toUpperCase().slice(0,34),bic:String(b.bic||"").replace(/\\s+/g,"").toUpperCase().slice(0,11),instructions:String(b.instructions||"").trim().slice(0,500)};
+ const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\s+/g,"").toUpperCase().slice(0,34),bic:String(b.bic||"").replace(/\s+/g,"").toUpperCase().slice(0,11),instructions:String(b.instructions||"").trim().slice(0,500)};
  if(next.iban&&!/^[A-Z]{2}[0-9A-Z]{13,32}$/.test(next.iban))return res.status(400).json({error:"Bitte eine gültige IBAN eingeben."});
  if(!next.accountHolder||!next.iban)return res.status(400).json({error:"Kontoinhaber und IBAN sind erforderlich."});
  await writeSniperSettings(next);res.json({ok:true,bank:next});
