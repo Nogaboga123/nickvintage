@@ -24,7 +24,7 @@ label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
 <div class="steps"><div><b>01 · FOTO</b><span>Artikelbilder auswählen</span></div><div><b>02 · ERSTELLEN</b><span>Text schreiben oder Bild verbessern</span></div><div><b>03 · KOPIEREN</b><span>Fertig für Vinted</span></div></div>
 <div class="grid">
 <section class="panel"><h2>✍️ Vinted-Beschreibung</h2><p class="sub">Foto hochladen, ein paar Infos ergänzen und deine Beschreibung erstellen lassen.</p>
-<label class="upload" for="photos"><div style="font-size:25px">＋</div><strong>Produktbilder auswählen</strong><span>JPG, PNG oder WEBP · bis zu 8 Bilder</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div id="preview" class="preview"></div>
+<label class="upload" for="photos"><div style="font-size:25px">＋</div><strong>Produktbilder auswählen</strong><span>JPG, PNG oder WEBP · bis zu 8 Bilder · Mehrfachauswahl möglich</span><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div id="preview" class="preview"></div>
 <div class="row"><div><label for="brand">Marke (optional)</label><input id="brand" placeholder="z. B. Nike"></div><div><label for="size">Größe (optional)</label><input id="size" placeholder="z. B. M"></div></div>
 <div class="row"><div><label for="condition">Zustand</label><select id="condition"><option value="">Bitte wählen</option><option>Neu mit Etikett</option><option>Sehr gut</option><option>Gut</option><option>Akzeptabel</option></select></div><div><label for="color">Farbe (optional)</label><input id="color" placeholder="z. B. Beige"></div></div>
 <label for="details">Details / Mängel</label><input id="details" placeholder="z. B. Oversized Fit, kleine Gebrauchsspur am Ärmel">
@@ -32,18 +32,18 @@ label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
 <label for="description">Dein Vinted-Text</label><textarea id="description" class="output" placeholder="Hier erscheint deine Beschreibung mit Emojis und Hashtags …"></textarea>
 <div class="actions"><button class="btn" id="copy">TEXT KOPIEREN</button></div><p class="note">Kostenloser Textbaukasten mit Tageslimit. Bitte prüfe den fertigen Text vor dem Einstellen.</p>
 </section>
-<section class="panel"><h2>🪄 Produktfoto verbessern</h2><p class="sub">Optimiere Helligkeit, Kontrast und leichte Schärfe direkt im Browser – ohne Upload zu einem KI-Dienst.</p>
-<label class="upload" for="photoEdit"><div style="font-size:25px">＋</div><strong>Foto zur Verbesserung auswählen</strong><span>Ein einzelnes JPG, PNG oder WEBP</span><input id="photoEdit" type="file" accept="image/jpeg,image/png,image/webp"></label>
+<section class="panel"><h2>🪄 Produktfoto verbessern</h2><p class="sub">Verbessere Helligkeit, Kontrast, Farben und Schärfe für mehrere Produktfotos gleichzeitig – kostenlos direkt im Browser.</p>
+<label class="upload" for="photoEdit"><div style="font-size:25px">＋</div><strong>Foto zur Verbesserung auswählen</strong><span>Bis zu 8 JPG-, PNG- oder WEBP-Bilder gleichzeitig</span><input id="photoEdit" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <div id="editPreview" class="image-result"></div>
-<label for="imagePrompt">Optionaler Wunsch</label><input id="imagePrompt" placeholder="z. B. heller beiger Hintergrund, natürliches Licht">
-<div class="actions"><button class="btn" id="enhance">✨ FOTO OPTIMIEREN</button></div><p class="status" id="imageStatus" aria-live="polite">Kostenlos und lokal im Browser. Dein Foto wird nicht an einen KI-Dienst gesendet.</p>
+<p class="note">Die Bearbeitung ist eine echte lokale Bildoptimierung, aber keine generative KI: Hintergrund und Gegenstände werden nicht verändert.</p>
+<div class="actions"><button class="btn" id="enhance">✨ AUSGEWÄHLTE FOTOS VERBESSERN</button></div><p class="status" id="imageStatus" aria-live="polite">Kostenlos und lokal im Browser. Deine Bilder werden nicht hochgeladen.</p>
 <div id="resultWrap" class="image-result" hidden><img id="resultImage" alt="Verbessertes Produktfoto"><div class="actions"><a id="download" class="btn" download="vinted-foto-verbessert.png" style="text-decoration:none">BILD SPEICHERN</a></div></div>
-<p class="note">Wichtig: Vergleiche das Ergebnis mit dem Original. Farbe, Form, Logo und sichtbare Gebrauchsspuren müssen stimmen.</p>
+<p class="note">Die Originale bleiben unverändert. Jedes optimierte Foto kann einzeln gespeichert werden.</p>
 </section></div>
 <footer class="footer">N Vintage · Unabhängiges Tool, nicht mit Vinted verbunden oder von Vinted unterstützt.</footer></main>
 <script>
 const $=id=>document.getElementById(id);
-let files=[],editFile=null;
+let files=[],editFiles=[];
 const LIMITS={text:10,image:5};
 const dayKey=()=>new Date().toISOString().slice(0,10);
 function usage(kind){try{return JSON.parse(localStorage.getItem("nv-vinted-"+kind)||"{}")}catch{return {}}}
@@ -51,9 +51,11 @@ function count(kind){const x=usage(kind);return x.day===dayKey()?Number(x.count|
 function allowed(kind){return count(kind)<LIMITS[kind]}
 function consume(kind){localStorage.setItem("nv-vinted-"+kind,JSON.stringify({day:dayKey(),count:count(kind)+1}))}
 function quotaText(kind){return "Heute noch "+Math.max(0,LIMITS[kind]-count(kind))+" von "+LIMITS[kind]+" kostenlosen Nutzungen."}
+function addFiles(existing,incoming,limit){const next=[...existing];for(const f of incoming){if(next.length>=limit)break;if(!next.some(x=>x.name===f.name&&x.size===f.size&&x.lastModified===f.lastModified))next.push(f)}return next}
 function draw(){const box=$("preview");box.innerHTML="";files.forEach((f,i)=>{const wrap=document.createElement("div");wrap.className="thumb";const img=document.createElement("img");img.src=URL.createObjectURL(f);const del=document.createElement("button");del.textContent="×";del.type="button";del.setAttribute("aria-label","Bild entfernen");del.onclick=()=>{files.splice(i,1);draw()};wrap.append(img,del);box.append(wrap)})}
-$("photos").addEventListener("change",e=>{files=[...e.target.files].slice(0,8);draw();$("textStatus").textContent=files.length+" Foto(s) ausgewählt. "+quotaText("text")});
-$("photoEdit").addEventListener("change",e=>{editFile=e.target.files[0]||null;$("editPreview").innerHTML="";if(editFile){const img=document.createElement("img");img.src=URL.createObjectURL(editFile);img.alt="Originalfoto";$("editPreview").append(img);$("imageStatus").textContent="Originalfoto bereit. "+quotaText("image")}});
+$("photos").addEventListener("change",e=>{files=addFiles(files,[...e.target.files],8);e.target.value="";draw();$("textStatus").textContent=files.length+" von 8 Produktfotos ausgewählt. "+quotaText("text")});
+$("photoEdit").multiple=true;
+$("photoEdit").addEventListener("change",e=>{editFiles=addFiles(editFiles,[...e.target.files],8);e.target.value="";$("editPreview").innerHTML="";editFiles.forEach((f,i)=>{const wrap=document.createElement("div");wrap.className="thumb";const img=document.createElement("img");img.src=URL.createObjectURL(f);img.alt="Ausgewähltes Produktfoto";const del=document.createElement("button");del.type="button";del.textContent="×";del.onclick=()=>{editFiles.splice(i,1);$("photoEdit").dispatchEvent(new Event("change"))};wrap.append(img,del);$("editPreview").append(wrap)});$("imageStatus").textContent=editFiles.length+" von 8 Fotos ausgewählt. "+quotaText("image")});
 function makeDescription(){
  const brand=$("brand").value.trim(),size=$("size").value.trim(),condition=$("condition").value.trim(),color=$("color").value.trim(),details=$("details").value.trim();
  const lines=["✨ Schönes "+(brand?brand+" ":"")+"Kleidungsstück"+(color?" in "+color:"")+"!"];
@@ -82,7 +84,7 @@ async function optimizeImage(file){
  ctx.putImageData(out,0,0);
  return await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.94));
 }
-$("enhance").onclick=async()=>{if(!editFile){$("imageStatus").textContent="Bitte zuerst ein Foto auswählen.";return}if(!allowed("image")){$("imageStatus").textContent="Dein kostenloses Tageslimit ist erreicht. "+quotaText("image")+" Das Limit wird morgen zurückgesetzt.";return}const b=$("enhance");b.disabled=true;$("imageStatus").textContent="Foto wird lokal optimiert …";$("resultWrap").hidden=true;try{const blob=await optimizeImage(editFile);if(!blob)throw new Error("Das Bild konnte nicht verarbeitet werden.");const url=URL.createObjectURL(blob);$("resultImage").src=url;$("download").href=url;$("resultWrap").hidden=false;consume("image");$("imageStatus").textContent="Foto optimiert (Helligkeit, Kontrast und leichte Schärfung). "+quotaText("image")+" Original und Ergebnis vergleichen."}catch(e){$("imageStatus").textContent=e.message||"Bild konnte nicht optimiert werden."}finally{b.disabled=false}};
+$("enhance").onclick=async()=>{if(!editFiles.length){$("imageStatus").textContent="Bitte zuerst ein oder mehrere Fotos auswählen.";return}if(count("image")+editFiles.length>LIMITS.image){$("imageStatus").textContent="Dein Tageslimit reicht dafür nicht aus. "+quotaText("image")+" Wähle weniger Bilder oder versuche es morgen erneut.";return}const b=$("enhance");b.disabled=true;$("resultWrap").hidden=true;$("resultWrap").innerHTML="";$("resultWrap").hidden=false;$("imageStatus").textContent="Optimiere "+editFiles.length+" Foto(s) …";try{for(let i=0;i<editFiles.length;i++){const blob=await optimizeImage(editFiles[i]);if(!blob)throw new Error("Bild "+(i+1)+" konnte nicht verarbeitet werden.");const url=URL.createObjectURL(blob);const card=document.createElement("div");card.className="image-result";const img=document.createElement("img");img.src=url;img.alt="Optimiertes Foto "+(i+1);const link=document.createElement("a");link.href=url;link.download="vinted-foto-"+(i+1)+"-optimiert.jpg";link.className="btn";link.style.textDecoration="none";link.textContent="FOTO "+(i+1)+" SPEICHERN";card.append(img,link);$("resultWrap").append(card);consume("image");$("imageStatus").textContent=(i+1)+" von "+editFiles.length+" Fotos optimiert. "+quotaText("image")}}catch(e){$("imageStatus").textContent=e.message||"Bilder konnten nicht optimiert werden."}finally{b.disabled=false}};
 $("textStatus").textContent="Kostenloser Textgenerator · "+quotaText("text");
 $("imageStatus").textContent="Kostenlose lokale Fotooptimierung · "+quotaText("image");
 </script></body></html>
