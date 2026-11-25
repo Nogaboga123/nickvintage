@@ -285,14 +285,22 @@ app.post("/api/sniper/payment-requests",async(req,res)=>{
  res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,iban:bank.iban,instructions:bank.instructions||""}});
 });
 app.post("/api/sniper/redeem",async(req,res)=>{
- const code=String(req.body?.code||"").trim().toUpperCase();
+ const code=String(req.body?.code||"").replace(/\\s+/g,"").toUpperCase();
+ if(!/^[A-F0-9]{16,64}$/.test(code))return res.status(401).json({error:"Der Zugangscode ist ungültig. Bitte den vollständigen Code aus der Nachricht kopieren."});
  const members=readSniperMembers();
- const member=members.find(x=>x.active&&(x.accessCode||x.accessToken)===code&&!x.codeUsedAt);
- if(!member)return res.status(401).json({error:"Zugangscode ungültig oder bereits verwendet. Jeder Code kann nur einmal eingelöst werden."});
+ const payments=readSniperPayments();
+ let member=members.find(x=>x.active&&!x.codeUsedAt&&String(x.accessCode||x.accessToken||"").replace(/\\s+/g,"").toUpperCase()===code);
+ const payment=payments.find(x=>x.status==="paid"&&String(x.accessCode||"").replace(/\\s+/g,"").toUpperCase()===code);
+ // Recovery: falls die Zahlung gespeichert wurde, der Mitglieder-Eintrag aber fehlt,
+ // den freigeschalteten Zugang aus dem bestätigten Zahlungseintrag wiederherstellen.
+ if(!member&&payment&&!payment.accessCodeUsedAt){
+  member={email:payment.email,active:true,plan:"lifetime",amountCents:payment.amountCents||2500,accessCode:code,codeUsedAt:null,sessionToken:null,activatedAt:payment.updatedAt||new Date().toISOString(),paymentReference:payment.reference};
+  members.unshift(member);
+ }
+ if(!member)return res.status(401).json({error:"Zugangscode ungültig oder bereits verwendet. Bitte prüfe den Code oder kontaktiere den Support."});
  member.codeUsedAt=new Date().toISOString();
  member.sessionToken=crypto.randomBytes(32).toString("hex");
  await writeSniperMembers(members);
- const payments=readSniperPayments(),payment=payments.find(x=>x.accessCode===code);
  if(payment){payment.accessCodeUsedAt=member.codeUsedAt;await writeSniperPayments(payments);}
  res.cookie("nv_sniper_access",member.sessionToken,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
  res.json({ok:true});
