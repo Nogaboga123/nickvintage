@@ -50,7 +50,7 @@ input:focus,select:focus,textarea:focus{border-color:#a9c8ff}
 <div class="actions"><button class="btn" id="aiWrite">✦ MIT KI ERSTELLEN</button></div><p id="textStatus" class="hint" aria-live="polite">Tipp: Lade oben ein Foto hoch – die KI kann es beim Schreiben berücksichtigen.</p></div>
 </section>
 <section class="panel"><div class="panelhead"><div><div class="step">SCHRITT 3 · ERGEBNIS</div><h2>Dein fertiger Vinted-Text</h2><p class="sub">Prüfe den Text und passe ihn bei Bedarf an.</p></div><span class="tag">VINTED READY</span></div>
-<div class="field"><label for="title">Titel</label><input id="title" placeholder="Dein Produkttitel"></div><div class="field" style="margin-top:12px"><label for="description">Beschreibung</label><textarea id="description" class="output" placeholder="Hier erscheint deine Beschreibung …"></textarea></div>
+<div class="field"><label for="title">Titel</label><input id="title" placeholder="Dein Produkttitel"></div><div class="field" style="margin-top:12px"><label>KI-Preisvorschlag</label><p id="priceSuggestion" class="hint">Wird nach dem Foto-Upload angezeigt · grobe Schätzung, keine Live-Vergleichspreise.</p></div><div class="field" style="margin-top:12px"><label for="description">Beschreibung</label><textarea id="description" class="output" placeholder="Hier erscheint deine Beschreibung …"></textarea></div>
 <div class="actions"><button class="btn" id="copyAll">TITEL & TEXT KOPIEREN</button><button class="btn secondary" id="copyDesc">NUR BESCHREIBUNG KOPIEREN</button></div><p id="message" class="hint" aria-live="polite"></p>
 </section>
 </div>
@@ -72,7 +72,27 @@ input:focus,select:focus,textarea:focus{border-color:#a9c8ff}
 const $=id=>document.getElementById(id);let files=[],urls=[],look="none";
 const fields=()=>({brand:$("brand").value.trim(),type:$("type").value.trim(),size:$("size").value.trim(),color:$("color").value.trim(),condition:$("condition").value,material:$("material").value.trim(),flaws:$("flaws").value.trim(),details:$("details").value.trim()});
 function drawPhotos(){urls.forEach(URL.revokeObjectURL);urls=files.map(f=>URL.createObjectURL(f));const grid=$("photoGrid");grid.innerHTML="";if(!files.length){grid.innerHTML='<div class="emptyphoto">Deine Produktbilder erscheinen hier.</div>';return}files.forEach((f,i)=>{const card=document.createElement("div");card.className="photo";const img=document.createElement("img");img.src=urls[i];img.alt="Produktfoto "+(i+1);img.style.filter=look==="bright"?"brightness(1.09) contrast(1.04) saturate(.94)":look==="warm"?"brightness(1.04) sepia(.12) saturate(1.08)":look==="contrast"?"contrast(1.13) saturate(1.05)":"";const del=document.createElement("button");del.type="button";del.textContent="×";del.setAttribute("aria-label","Foto entfernen");del.onclick=()=>{files.splice(i,1);drawPhotos();checks()};card.append(img,del);grid.append(card)})}
-$("photos").addEventListener("change",e=>{files=[...files,...Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/"))].slice(0,8);e.target.value="";drawPhotos();checks()});
+async function analyzeUploadedProduct(){
+ if(!files.length)return;
+ const status=$("textStatus");status.textContent="✦ KI analysiert Marke, Artikel, Farbe und Etiketten …";
+ try{
+  const data=new FormData();data.append("image",files[0],files[0].name);
+  const response=await fetch("/sniper.html/api/analyze-product",{method:"POST",body:data});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Fotoanalyse fehlgeschlagen.");
+  ["brand","type","size","color","material","condition","details"].forEach(id=>{if(result[id]&&!$(id).value.trim())$(id).value=result[id]});
+  const price=$("priceSuggestion");if(price){price.textContent=result.priceLow&&result.priceHigh?"Preisvorschlag: ca. "+result.priceLow+"–"+result.priceHigh+" € · "+(result.priceNote||"KI-Schätzung"):"Preisvorschlag: nicht sicher bestimmbar – bitte selbst prüfen."}
+  status.textContent="Fotoanalyse fertig. Erkannte Angaben wurden ergänzt – bitte kontrollieren. Die KI erstellt jetzt deinen Inseratstext …";
+  const form=new FormData();form.append("image",files[0],files[0].name);Object.entries(fields()).forEach(([k,v])=>form.append(k,v));form.append("kind","listing");
+  const textResponse=await fetch("/sniper.html/api/ai-text",{method:"POST",body:form});const textResult=await textResponse.json().catch(()=>({}));
+  if(!textResponse.ok)throw new Error(textResult.error||"Inseratstext konnte nicht erstellt werden.");
+  const output=textResult.text||"";const title=output.match(/TITEL:\s*(.+)/i);const desc=output.match(/BESCHREIBUNG:\s*([\s\S]*)/i);
+  if(title)$("title").value=title[1].trim();if(desc)$("description").value=desc[1].trim();else $("description").value=output;
+  status.textContent="Fertig! Erkannte Produktdaten und Vinted-Beschreibung sind eingetragen. Bitte alles prüfen.";
+  checks();
+ }catch(error){status.textContent=error.message}
+}
+$("photos").addEventListener("change",e=>{files=[...files,...Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/"))].slice(0,8);e.target.value="";drawPhotos();checks();if(files.length)analyzeUploadedProduct()});
 function build(){const x=fields();if(!x.brand&&!x.type){$("message").textContent="Bitte mindestens Marke oder Artikel eintragen.";return false}const title=[x.brand,x.type,x.color].filter(Boolean).join(" ");const lines=[];if(x.brand)lines.push("Marke: "+x.brand);if(x.size)lines.push("Größe: "+x.size);if(x.color)lines.push("Farbe: "+x.color);if(x.material)lines.push("Material: "+x.material);lines.push("Zustand: "+x.condition);let desc="Ich verkaufe "+[x.brand,x.type].filter(Boolean).join(" ")+".";if(x.color)desc+=" Farbe: "+x.color+".";if(x.size)desc+=" Größe: "+x.size+".";if(x.material)desc+=" Material: "+x.material+".";desc+="\n\n"+(x.details||"Weitere Details gerne auf Anfrage.");desc+="\n\nZustand: "+x.condition+".";if(x.flaws)desc+="\nBitte beachten: "+x.flaws+".";desc+="\n\nBei Fragen oder Interesse gerne melden!";$("title").value=title;$("description").value=lines.join("\n")+"\n\n"+desc;$("message").textContent="Titel und Beschreibung erstellt – bitte Angaben vor dem Einstellen prüfen.";checks();return true}
 $("generate").onclick=build;
 function makePrompt(){const x=fields();return "Du bist ein professioneller Vinted-Copywriter. Schreibe auf Deutsch einen suchoptimierten, natürlichen Vinted-Titel (maximal 80 Zeichen) und eine ehrliche, gut lesbare Beschreibung. Erfinde keine Angaben. Nenne Mängel ausdrücklich. Vermeide übertriebene Werbesprache.\n\nMarke: "+(x.brand||"nicht angegeben")+"\nArtikel: "+(x.type||"nicht angegeben")+"\nGröße: "+(x.size||"nicht angegeben")+"\nFarbe: "+(x.color||"nicht angegeben")+"\nZustand: "+x.condition+"\nMaterial: "+(x.material||"nicht angegeben")+"\nMängel: "+(x.flaws||"keine angegeben – nicht als mangelfrei behaupten")+"\nDetails: "+(x.details||"keine weiteren Angaben")+"\n\nGib zuerst den Titel und danach die Beschreibung aus."}
