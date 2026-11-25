@@ -282,7 +282,7 @@ app.post("/api/sniper/payment-requests",async(req,res)=>{
  const reference="SNIPER-"+crypto.randomBytes(4).toString("hex").toUpperCase();
  const item={id,reference,email,amountCents:2500,status:"pending",createdAt:new Date().toISOString()};
  const list=readSniperPayments();list.unshift(item);await writeSniperPayments(list);
- res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,bankName:bank.bankName||"",iban:bank.iban,bic:bank.bic||"",instructions:bank.instructions||""}});
+ res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,bankName:bank.bankName||"",iban:bank.iban,instructions:bank.instructions||""}});
 });
 app.post("/api/sniper/redeem",(req,res)=>{
  const code=String(req.body?.code||"").trim().toUpperCase();
@@ -306,7 +306,7 @@ app.post("/api/sniper/admin/owner-access",auth,async(req,res)=>{
 });
 app.put("/api/sniper/admin/settings",auth,async(req,res)=>{
  const b=req.body||{};
- const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\s+/g,"").toUpperCase().slice(0,34),bic:String(b.bic||"").replace(/\s+/g,"").toUpperCase().slice(0,11),instructions:String(b.instructions||"").trim().slice(0,500)};
+ const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\s+/g,"").toUpperCase().slice(0,34),instructions:String(b.instructions||"").trim().slice(0,500)};
  if(next.iban&&!/^[A-Z]{2}[0-9A-Z]{13,32}$/.test(next.iban))return res.status(400).json({error:"Bitte eine gültige IBAN eingeben."});
  if(!next.accountHolder||!next.iban)return res.status(400).json({error:"Kontoinhaber und IBAN sind erforderlich."});
  await writeSniperSettings(next);res.json({ok:true,bank:next});
