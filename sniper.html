@@ -24,7 +24,11 @@
 <div class="field wide"><label for="details">Weitere Details</label><textarea id="details" placeholder="Passform, Maße, besondere Details, Artikelnummer …"></textarea></div>
 </div>
 <div class="actions"><button class="btn" id="generate">VINTED-TITEL & BESCHREIBUNG ERSTELLEN</button><button class="btn secondary" id="prompt">KI-PROMPT ERSTELLEN</button></div>
-<p class="hint">Der Inseratstext wird aus deinen Angaben erstellt. Der KI-Prompt kann in deinem bevorzugten KI-Assistenten verwendet werden.</p>
+<p class="hint">Der schnelle Entwurf funktioniert lokal. Für die richtige KI nutze den KI-Copywriter – mit Fotoanalyse und deinem eigenen Wunsch.</p>
+<div class="toolcard" style="margin-top:13px"><b>✦ KI-COPYWRITER</b><p>Die KI schaut sich dein Foto an und schreibt einen passenden Text – oder erfüllt deinen eigenen Auftrag.</p>
+<div class="field" style="margin-top:11px"><label for="textMode">Was soll die KI schreiben?</label><select id="textMode"><option value="listing">Komplettes Vinted-Inserat</option><option value="short">Kurze Beschreibung</option><option value="premium">Premium Vintage Beschreibung</option><option value="keywords">Suchbegriffe & Hashtags</option><option value="price">Preisidee (Schätzung)</option><option value="custom">Mein eigener Wunsch</option></select></div>
+<div class="field" style="margin-top:10px"><label for="textCustom">Dein Wunsch (optional)</label><textarea id="textCustom" placeholder="z. B. Schreib locker und modern, erwähne den oversized Fit …" style="min-height:75px"></textarea></div>
+<div class="actions"><button class="btn" id="aiWrite">✦ MIT KI ERSTELLEN</button></div><p id="textStatus" class="hint" aria-live="polite">Tipp: Lade oben ein Foto hoch – die KI kann es beim Schreiben berücksichtigen.</p></div>
 </section>
 <section class="panel"><div class="panelhead"><div><div class="step">03 / DEIN INSERAT</div><h2>Fertig zum Kopieren</h2><p class="sub">Prüfe den Text und passe ihn bei Bedarf an.</p></div><span class="tag">VINTED READY</span></div>
 <div class="field"><label for="title">Titel</label><input id="title" placeholder="Dein Produkttitel"></div><div class="field" style="margin-top:12px"><label for="description">Beschreibung</label><textarea id="description" class="output" placeholder="Hier erscheint deine Beschreibung …"></textarea></div>
@@ -35,7 +39,7 @@
 <section class="panel"><div class="panelhead"><div><div class="step">04 / PHOTO LAB</div><h2>Dein Foto-Workflow</h2><p class="sub">Mach deine Produktbilder bereit für ein sauberes Listing.</p></div></div>
 <div class="toolcard"><b>✦ KI-Bildbearbeitung</b><p>Für einen neuen Hintergrund, freigestellte Produkte oder ein KI-generiertes Setting wird eine Bild-KI-Anbindung benötigt. Die Originalfotos bleiben unverändert.</p><button class="btn secondary" id="photoPrompt" style="margin-top:11px">BEARBEITUNGSPROMPT ERSTELLEN</button></div>
 <div class="toolcard" style="margin-top:9px"><b>☼ Foto-Look verbessern</b><p>Eine dezente lokale Optimierung für Helligkeit, Kontrast und Farbe – ohne Produktdetails zu verändern.</p><div class="field" style="margin-top:10px"><label for="look">Look</label><select id="look"><option value="none">Original</option><option value="bright">Hell & clean</option><option value="warm">Warm vintage</option><option value="contrast">Mehr Kontrast</option></select></div><button class="btn secondary" id="applyLook">LOOK AUF VORSCHAU ANWENDEN</button></div>
-<div class="toolcard" style="margin-top:9px"><b>✦ Echte KI-Bildbearbeitung</b><p>Bearbeite dein erstes Produktfoto direkt hier: transparenter Hintergrund oder neutrales Studio-Setting. Das Original bleibt unverändert.</p><div class="actions"><button class="btn" id="removeBg">HINTERGRUND ENTFERNEN</button><button class="btn secondary" id="studioBg">STUDIO-HINTERGRUND</button></div><p id="aiStatus" class="hint" aria-live="polite">Wähle links mindestens ein Foto aus. Die KI-Bearbeitung benötigt einen konfigurierten API-Schlüssel.</p><div id="aiResult" class="preview" style="display:none;margin-top:10px"><h3>KI-Ergebnis</h3><img id="aiImage" alt="KI-bearbeitetes Produktfoto" style="display:block;width:100%;max-height:420px;object-fit:contain;border-radius:8px;background:#090e10"><div class="actions"><a id="downloadAi" class="btn" download="vinted-ai-bild.png" style="text-decoration:none;display:inline-block">ERGEBNIS SPEICHERN</a></div></div></div>
+<div class="toolcard" style="margin-top:9px"><b>✦ KI-FOTO STUDIO</b><p>Lass dein Kleidungsstück von einem virtuellen Model tragen, erstelle ein Lifestyle-Foto oder beschreibe deinen eigenen Bildwunsch.</p><div class="actions"><button class="btn" id="modelPhoto">AN EINEM MODEL</button><button class="btn secondary" id="lifestylePhoto">LIFESTYLE FOTO</button><button class="btn secondary" id="removeBg">HINTERGRUND ENTFERNEN</button><button class="btn secondary" id="studioBg">STUDIO-HINTERGRUND</button></div><div class="field" style="margin-top:10px"><label for="imageCustom">Oder: Was soll auf dem Bild passieren?</label><textarea id="imageCustom" placeholder="z. B. Frau trägt diese Hose, Ganzkörperfoto, heller minimalistischer Hintergrund …" style="min-height:75px"></textarea></div><button class="btn secondary" id="customPhoto" style="margin-top:8px">EIGENEN BILDPROMPT AUSFÜHREN</button><p id="aiStatus" class="hint" aria-live="polite">Wähle links ein Produktfoto aus. Die KI erstellt daraus ein neues Bild.</p><div id="aiResult" class="preview" style="display:none;margin-top:10px"><h3>KI-Ergebnis</h3><img id="aiImage" alt="KI-bearbeitetes Produktfoto" style="display:block;width:100%;max-height:420px;object-fit:contain;border-radius:8px;background:#090e10"><div class="actions"><a id="downloadAi" class="btn" download="vinted-ai-bild.png" style="text-decoration:none;display:inline-block">ERGEBNIS SPEICHERN</a></div></div></div>
 <div class="notice">Bitte prüfe jedes KI-Ergebnis vor dem Hochladen. Produktfarbe, Form, Logos und sichtbare Gebrauchsspuren müssen dem Original entsprechen. KI kann Details verändern.</div>
 </section>
 <section class="panel"><div class="panelhead"><div><div class="step">05 / LISTING CHECK</div><h2>Vor dem Hochladen</h2></div></div>
@@ -56,24 +60,46 @@ function makePrompt(){const x=fields();return "Du bist ein professioneller Vinte
 $("prompt").onclick=async()=>{const p=makePrompt();$("description").value=p;$("message").textContent="KI-Prompt steht im Beschreibungsfeld. Kopiere ihn in deinen KI-Assistenten."};
 $("photoPrompt").onclick=async()=>{const x=fields();const p="Bearbeite das hochgeladene Kleidungsstückfoto für ein realistisches Vinted-Produktlisting. Erhalte exakt das Kleidungsstück, seine Farbe, Form, Logos, Nähte, Textur und alle Gebrauchsspuren. Verändere nicht den Zustand und entferne keine Mängel. Ersetze nur den unruhigen Hintergrund durch einen hellen, neutralen, stilvollen Studiohintergrund mit weichem Tageslicht. Keine zusätzlichen Gegenstände, kein Text, keine Wasserzeichen. Produkt: "+[x.brand,x.type,x.color,x.size].filter(Boolean).join(", ");$("description").value=p;$("message").textContent="Bildbearbeitungs-Prompt erstellt. Nutze ihn zusammen mit einem deiner Fotos in einem Bild-KI-Tool."};
 $("applyLook").onclick=()=>{look=$("look").value;drawPhotos();$("message").textContent="Vorschau-Look angewendet. Originaldateien bleiben unverändert."};
+async function writeWithAI(){
+ const btn=$("aiWrite");btn.disabled=true;$("textStatus").textContent="Die KI analysiert deine Angaben"+(files.length?" und dein Foto":"")+" …";
+ try{
+  const data=new FormData();if(files.length)data.append("image",files[0],files[0].name);
+  const x=fields();Object.entries(x).forEach(([k,v])=>data.append(k,v));
+  data.append("kind",$("textMode").value);data.append("custom",$("textCustom").value);
+  const response=await fetch("/sniper.html/api/ai-text",{method:"POST",body:data});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Text konnte nicht erstellt werden.");
+  const txt=result.text||"";const title=txt.match(/TITEL:\s*(.+)/i);const desc=txt.match(/BESCHREIBUNG:\s*([\s\S]*)/i);
+  if(title) $("title").value=title[1].trim();
+  if(desc) $("description").value=desc[1].trim();else $("description").value=txt;
+  $("textStatus").textContent="Fertig! Prüfe bitte Marke, Zustand und alle Angaben vor dem Einstellen.";
+  $("message").textContent="Dein KI-Text wurde erstellt.";
+  checks();
+ }catch(e){$("textStatus").textContent=e.message}
+ finally{btn.disabled=false}
+}
+$("aiWrite").onclick=writeWithAI;
 async function editProductPhoto(mode){
  if(!files.length){$("aiStatus").textContent="Bitte zuerst mindestens ein Produktfoto hochladen.";return}
- const buttons=[$("removeBg"),$("studioBg")];buttons.forEach(b=>b.disabled=true);
+ const buttons=[$("removeBg"),$("studioBg"),$("modelPhoto"),$("lifestylePhoto"),$("customPhoto")];buttons.forEach(b=>b.disabled=true);
  $("aiStatus").textContent="KI bearbeitet dein Foto … Das kann bis zu einer Minute dauern.";
  $("aiResult").style.display="none";
  try{
-  const data=new FormData();data.append("image",files[0],files[0].name);data.append("mode",mode);
+  const data=new FormData();data.append("image",files[0],files[0].name);data.append("mode",mode);data.append("custom",$("imageCustom").value);
   const x=fields();data.append("product",[x.brand,x.type,x.color,x.size].filter(Boolean).join(", "));
   const response=await fetch("/sniper.html/api/image-edit",{method:"POST",body:data});
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||"Bildbearbeitung fehlgeschlagen.");
   $("aiImage").src=result.image;$("downloadAi").href=result.image;
   $("aiResult").style.display="block";
-  $("aiStatus").textContent=mode==="background"?"Hintergrund entfernt. Das Ergebnis hat einen transparenten PNG-Hintergrund.":"Studio-Hintergrund erstellt. Bitte Ergebnis mit dem Original vergleichen.";
+  $("aiStatus").textContent=mode==="background"?"Hintergrund entfernt. Das Ergebnis hat einen transparenten PNG-Hintergrund.":mode==="model"?"Modelbild erstellt. Prüfe, ob das Kleidungsstück originalgetreu dargestellt ist.":mode==="lifestyle"?"Lifestyle-Bild erstellt. Bitte Produktdetails mit dem Original vergleichen.":mode==="custom"?"Dein Wunschbild wurde erstellt. Bitte Ergebnis prüfen.":"Studio-Hintergrund erstellt. Bitte Ergebnis mit dem Original vergleichen.";
  }catch(error){$("aiStatus").textContent=error.message}
  finally{buttons.forEach(b=>b.disabled=false)}
 }
 $("removeBg").onclick=()=>editProductPhoto("background");
+$("modelPhoto").onclick=()=>editProductPhoto("model");
+$("lifestylePhoto").onclick=()=>editProductPhoto("lifestyle");
+$("customPhoto").onclick=()=>editProductPhoto("custom");
 $("studioBg").onclick=()=>editProductPhoto("studio");
 
 async function copy(s){if(!s)return false;try{await navigator.clipboard.writeText(s);return true}catch{return false}}
