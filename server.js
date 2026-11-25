@@ -281,9 +281,10 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
  if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die KI-Bildbearbeitung ist vorbereitet, aber der OpenAI-API-Schlüssel fehlt noch in Render (OPENAI_API_KEY)."});
  if(!req.file)return res.status(400).json({error:"Bitte zuerst ein JPG-, PNG- oder WEBP-Foto auswählen."});
  const mode=String(req.body?.mode||"background");
- if(!["background","studio"].includes(mode))return res.status(400).json({error:"Unbekannter Bearbeitungsmodus."});
+ if(!["background","studio","model","lifestyle","custom"].includes(mode))return res.status(400).json({error:"Unbekannter Bearbeitungsmodus."});
+ const custom=String(req.body?.custom||"").slice(0,1000);
  const product=String(req.body?.product||"").slice(0,300);
- const prompt=mode==="background"
+ const prompt=mode==="model" ? "Create a photorealistic fashion e-commerce image showing a real adult female model wearing the exact garment from the reference photo. Keep the garment as faithful as possible: preserve its color, cut, fabric, logos, prints, seams and visible wear. Show a natural full or three-quarter body pose, tasteful simple studio background, realistic proportions and lighting. Do not invent labels or claim exact fit. The model is fictional and must not resemble a real person. Garment context: "+product : mode==="lifestyle" ? "Create a photorealistic lifestyle fashion image featuring the exact garment from the reference photo in a tasteful contemporary street-style setting. Preserve garment color, cut, fabric, logos, print and visible wear as faithfully as possible. Do not add brand marks or alter the design. Garment context: "+product : mode==="custom" ? "Edit the provided product photo according to this user request: "+custom+". Preserve the actual product identity, design, logos, color and visible defects as faithfully as possible. Do not invent product facts or hide wear. Product context: "+product : mode==="background"
   ? "Remove only the background from this exact product photograph and return the product as a clean, accurately isolated cutout on a fully transparent background. Preserve the product exactly: same shape, proportions, color, material, texture, logos, labels, seams, shadows that belong to the product, and every visible defect or sign of wear. Do not repair, beautify, recolor, redesign, add, remove, or invent any product detail. Do not add text, props, or watermark. Product context: "+product
   : "Edit this exact product photograph for a realistic second-hand fashion marketplace listing. Keep the product absolutely faithful to the source: preserve exact shape, proportions, color, fabric texture, logos, labels, seams, and every visible defect or sign of wear. Change only the surrounding background to a clean, light neutral studio backdrop with soft natural daylight. Do not retouch or improve the item, do not hide defects, do not add props, text, or watermark. Product context: "+product;
  try{
@@ -301,8 +302,23 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
   const encoded=data.data?.[0]?.b64_json;
   if(!encoded)return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});
   res.set("Cache-Control","no-store");
-  res.json({image:"data:image/png;base64,"+encoded,mode,model:"gpt-image-2.5-sunburst"});
+  res.json({image:"data:image/png;base64,"+encoded,mode,model:"gpt-image-2.6-sunburst"});
  }catch(error){console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
+});
+// Vinted AI Tool: Text- und Bildassistent
+const aiMember=(req)=>{const token=req.cookies?.nv_sniper_access;return token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));};
+app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>{
+ if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
+ if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"KI noch nicht aktiviert: In Render fehlt OPENAI_API_KEY."});
+ const {brand="",type="",size="",color="",condition="",material="",flaws="",details="",kind="listing",custom=""}=req.body||{};
+ const prompt="Du bist ein sehr guter deutscher Vinted-Verkaufsassistent. Erstelle nur Inhalte, die durch die Angaben oder das Foto gestützt sind. Erfinde niemals Marke, Größe, Material, Zustand, Maße oder Echtheit. Nenne bekannte Mängel ausdrücklich. Schreibe natürlich, klar und verkaufsstark, ohne Spam.\nAufgabe: "+({listing:"Erstelle einen suchstarken Vinted-Titel (max. 80 Zeichen) und eine überzeugende, ehrliche Beschreibung.",short:"Erstelle eine kurze, lockere Vinted-Beschreibung.",premium:"Erstelle eine hochwertige Vintage-Produktbeschreibung mit passender Tonalität.",keywords:"Gib passende Suchbegriffe und Hashtags aus, ohne irrelevante Tags.",price:"Schlage eine realistische Preis-Spanne nur dann vor, wenn Marke und Artikel eindeutig sind; begründe kurz und kennzeichne sie als Schätzung.",custom:"Erfülle den individuellen Wunsch des Nutzers: "+String(custom).slice(0,1000)}[kind]||"Erstelle einen Vinted-Titel und eine Beschreibung.")+"\nAngaben:\nMarke: "+brand+"\nArtikel: "+type+"\nGröße: "+size+"\nFarbe: "+color+"\nZustand: "+condition+"\nMaterial: "+material+"\nMängel: "+(flaws||"Nicht angegeben; nicht als mangelfrei darstellen.")+"\nWeitere Details: "+details+"\nAntworte auf Deutsch. Bei listing zuerst 'TITEL:' und danach 'BESCHREIBUNG:'.";
+ try{
+  const messages=[{role:"system",content:"Du bist ein präziser, ehrlicher Assistent für Secondhand-Mode und Vinted."},{role:"user",content:req.file?[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]:prompt}];
+  const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,temperature:0.7}) ,signal:AbortSignal.timeout(90000)});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok){console.error("OpenAI text assistant:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Text-KI ist gerade nicht erreichbar."});}
+  res.json({text:data.choices?.[0]?.message?.content||""});
+ }catch(error){console.error("Vinted AI text:",error.message);res.status(502).json({error:"Verbindung zur Text-KI fehlgeschlagen. Bitte erneut versuchen."});}
 });
 // Sniper: manuelle Einmalzahlung und lebenslange Freischaltung (ohne Zahlungsanbieter).
 app.post("/api/sniper/payment-requests",async(req,res)=>{
