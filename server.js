@@ -249,7 +249,7 @@ app.get("/sitemap.xml",(_req,res)=>{const urls=["/","/drop.html",...["tracksuits
 app.use((req,res,next)=>{
  if(req.path!=="/sniper.html")return next();
  const token=req.cookies?.nv_sniper_access;
- const member=token&&readSniperMembers().find(x=>x.active&&x.accessToken===token);
+ const member=token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));
  if(!member)return res.redirect("/sniper-kaufen.html?access=required");
  next();
 });
@@ -282,13 +282,19 @@ app.post("/api/sniper/payment-requests",async(req,res)=>{
  const reference="SNIPER-"+crypto.randomBytes(4).toString("hex").toUpperCase();
  const item={id,reference,email,amountCents:2500,status:"pending",createdAt:new Date().toISOString()};
  const list=readSniperPayments();list.unshift(item);await writeSniperPayments(list);
- res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,bankName:bank.bankName||"",iban:bank.iban,instructions:bank.instructions||""}});
+ res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,iban:bank.iban,instructions:bank.instructions||""}});
 });
-app.post("/api/sniper/redeem",(req,res)=>{
+app.post("/api/sniper/redeem",async(req,res)=>{
  const code=String(req.body?.code||"").trim().toUpperCase();
- const member=readSniperMembers().find(x=>x.active&&x.accessToken===code);
- if(!member)return res.status(401).json({error:"Zugangscode ungültig. Bitte prüfe den Code oder kontaktiere den Betreiber."});
- res.cookie("nv_sniper_access",code,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
+ const members=readSniperMembers();
+ const member=members.find(x=>x.active&&(x.accessCode||x.accessToken)===code&&!x.codeUsedAt);
+ if(!member)return res.status(401).json({error:"Zugangscode ungültig oder bereits verwendet. Jeder Code kann nur einmal eingelöst werden."});
+ member.codeUsedAt=new Date().toISOString();
+ member.sessionToken=crypto.randomBytes(32).toString("hex");
+ await writeSniperMembers(members);
+ const payments=readSniperPayments(),payment=payments.find(x=>x.accessCode===code);
+ if(payment){payment.accessCodeUsedAt=member.codeUsedAt;await writeSniperPayments(payments);}
+ res.cookie("nv_sniper_access",member.sessionToken,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
  res.json({ok:true});
 });
 app.get("/api/sniper/payment-requests/:id", (req,res)=>{
@@ -300,8 +306,9 @@ app.get("/api/sniper/admin/overview",auth,(_req,res)=>res.json({payments:readSni
 app.post("/api/sniper/admin/owner-access",auth,async(req,res)=>{
  const members=readSniperMembers();
  let owner=members.find(x=>x.owner===true);
- if(!owner){owner={email:"site-owner",active:true,owner:true,plan:"lifetime",accessToken:crypto.randomBytes(16).toString("hex").toUpperCase(),activatedAt:new Date().toISOString()};members.unshift(owner);await writeSniperMembers(members);}
- res.cookie("nv_sniper_access",owner.accessToken,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
+ if(!owner){owner={email:"site-owner",active:true,owner:true,plan:"lifetime",sessionToken:crypto.randomBytes(32).toString("hex"),activatedAt:new Date().toISOString()};members.unshift(owner);await writeSniperMembers(members);}
+ if(!owner.sessionToken){owner.sessionToken=crypto.randomBytes(32).toString("hex");await writeSniperMembers(members);}
+ res.cookie("nv_sniper_access",owner.sessionToken,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
  res.json({ok:true,url:"/sniper.html"});
 });
 app.put("/api/sniper/admin/settings",auth,async(req,res)=>{
@@ -318,10 +325,12 @@ app.put("/api/sniper/admin/payments/:id",auth,async(req,res)=>{
  if(!["paid","rejected"].includes(status))return res.status(400).json({error:"Ungültiger Status."});
  if(list[i].status==="paid"&&status!=="paid")return res.status(409).json({error:"Eine bestätigte Zahlung kann hier nicht zurückgesetzt werden."});
  list[i].status=status;list[i].updatedAt=new Date().toISOString();await writeSniperPayments(list);
- if(status==="paid"){
-  const members=readSniperMembers(),email=list[i].email;
-  let member=members.find(x=>x.email===email&&x.active);
-  if(!member){member={email,active:true,plan:"lifetime",amountCents:2500,accessToken:crypto.randomBytes(12).toString("hex").toUpperCase(),activatedAt:new Date().toISOString(),paymentReference:list[i].reference};members.unshift(member);await writeSniperMembers(members);}
+ if(status==="paid"&&!list[i].accessCode){
+  const members=readSniperMembers();
+  const accessCode=crypto.randomBytes(8).toString("hex").toUpperCase();
+  members.unshift({email:list[i].email,active:true,plan:"lifetime",amountCents:2500,accessCode,codeUsedAt:null,sessionToken:null,activatedAt:new Date().toISOString(),paymentReference:list[i].reference});
+  await writeSniperMembers(members);
+  list[i].accessCode=accessCode;
   list[i].emailStatus="manual";
   await writeSniperPayments(list);
  }
