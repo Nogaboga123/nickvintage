@@ -320,8 +320,16 @@ app.put("/api/sniper/admin/payments/:id",auth,async(req,res)=>{
  list[i].status=status;list[i].updatedAt=new Date().toISOString();await writeSniperPayments(list);
  if(status==="paid"){
   const members=readSniperMembers(),email=list[i].email;
-  if(!members.some(x=>x.email===email))members.unshift({email,active:true,plan:"lifetime",amountCents:2500,accessToken:crypto.randomBytes(12).toString("hex").toUpperCase(),activatedAt:new Date().toISOString(),paymentReference:list[i].reference});
-  await writeSniperMembers(members);
+  let member=members.find(x=>x.email===email&&x.active);
+  if(!member){member={email,active:true,plan:"lifetime",amountCents:2500,accessToken:crypto.randomBytes(12).toString("hex").toUpperCase(),activatedAt:new Date().toISOString(),paymentReference:list[i].reference};members.unshift(member);await writeSniperMembers(members);}
+  if(emailApiKey&&emailFrom){
+   try{
+    const content=emailFrame("Dein Sniper-Zugang ist freigeschaltet",'<h1 style="font-size:26px;margin:28px 0 8px">Dein Zugang ist aktiv!</h1><p style="line-height:1.6">Danke für deine Zahlung. Dein lebenslanger Sniper-Zugang wurde freigeschaltet.</p><p style="margin:22px 0 8px">Dein persönlicher Zugangscode:</p><div style="padding:16px;background:#f1f4e9;border:1px solid #d5ff62;font-size:22px;font-weight:700;letter-spacing:2px">'+escapeEmailHtml(member.accessToken)+'</div><p style="line-height:1.6">Öffne <a href="'+escapeEmailHtml(publicBaseUrl+'/sniper-kaufen.html')+'">deine Zugang-Seite</a>, gib den Code ein und starte deinen Sniper.</p><p style="color:#777;font-size:13px">Bitte bewahre diesen Code sicher auf.</p>');
+    await sendTransactionalEmail({to:email,subject:"Dein Sniper-Zugangscode | N Vintage",html:content,text:"Dein Sniper-Zugang ist freigeschaltet.\n\nZugangscode: "+member.accessToken+"\n\nEinlösen: "+publicBaseUrl+"/sniper-kaufen.html\n\nBitte bewahre diesen Code sicher auf.",idempotencyKey:"n-vintage-sniper-access-"+hash(list[i].id).slice(0,32)});
+    list[i].emailStatus="sent";list[i].emailSentAt=new Date().toISOString();delete list[i].emailError;
+   }catch(error){list[i].emailStatus="failed";list[i].emailError=String(error.message||"E-Mail-Versand fehlgeschlagen").slice(0,180);console.error("Sniper-Zugangsmail fehlgeschlagen:",email,error.message)}
+  }else list[i].emailStatus="not_configured";
+  await writeSniperPayments(list);
  }
  res.json({ok:true,payment:list[i]});
 });
