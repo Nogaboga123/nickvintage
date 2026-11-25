@@ -318,6 +318,22 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
 });
 // Vinted AI Tool: Text- und Bildassistent
 const aiMember=(req)=>{const token=req.cookies?.nv_sniper_access;return token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));};
+app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(req,res)=>{
+ if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
+ if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"KI noch nicht aktiviert: In Render fehlt OPENAI_API_KEY."});
+ if(!req.file)return res.status(400).json({error:"Bitte zuerst ein Produktfoto auswählen."});
+ const prompt="Analysiere dieses Secondhand-Kleidungsstück für ein Vinted-Inserat. Antworte ausschließlich als gültiges JSON mit den Feldern brand,type,size,color,material,condition,details,priceLow,priceHigh,priceNote. Werte als Strings, priceLow und priceHigh als Zahlen in Euro oder null. Erkenne nur Merkmale, die im Foto wirklich sichtbar oder lesbar sind. Wenn Marke/Größe/Material nicht eindeutig erkennbar sind, gib leeren String zurück. Lies Logos/Etiketten nur wenn lesbar. Zustand niemals als neu behaupten; wenn Gebrauchsspuren nicht sicher beurteilbar sind, condition leer lassen. Schätze eine vorsichtige Gebrauchtpreis-Spanne nur wenn Artikeltyp und Marke hinreichend bestimmbar sind, sonst null. Preis ist eine grobe KI-Schätzung ohne Live-Marktdaten oder Vergleichsangebote. details kurz halten.";
+ try{
+  const messages=[{role:"system",content:"Du bist ein vorsichtiger visueller Assistent für Secondhand-Mode. Erfinde keine Produktmerkmale."},{role:"user",content:[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]}];
+  const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,response_format:{type:"json_object"},temperature:0.2}),signal:AbortSignal.timeout(90000)});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok){console.error("OpenAI product analysis:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Fotoanalyse ist gerade nicht erreichbar."});}
+  const raw=data.choices?.[0]?.message?.content||"{}";let result;try{result=JSON.parse(raw)}catch{return res.status(502).json({error:"Die Fotoanalyse lieferte kein lesbares Ergebnis."});}
+  const clean=v=>typeof v==="string"?v.trim().slice(0,500):"";
+  const low=Number(result.priceLow),high=Number(result.priceHigh);
+  res.set("Cache-Control","no-store").json({brand:clean(result.brand),type:clean(result.type),size:clean(result.size),color:clean(result.color),material:clean(result.material),condition:clean(result.condition),details:clean(result.details),priceLow:Number.isFinite(low)&&low>0?Math.round(low):null,priceHigh:Number.isFinite(high)&&high>=low?Math.round(high):null,priceNote:clean(result.priceNote)||"Grobe KI-Schätzung, keine Live-Marktdaten."});
+ }catch(error){console.error("Vinted product analysis:",error.message);res.status(502).json({error:"Verbindung zur Fotoanalyse fehlgeschlagen. Bitte erneut versuchen."});}
+});
 app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
  if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"KI noch nicht aktiviert: In Render fehlt OPENAI_API_KEY."});
