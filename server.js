@@ -297,6 +297,13 @@ app.get("/api/sniper/payment-requests/:id", (req,res)=>{
  res.json({status:item.status,reference:item.reference,email:item.email});
 });
 app.get("/api/sniper/admin/overview",auth,(_req,res)=>res.json({payments:readSniperPayments(),members:readSniperMembers(),bank:readSniperSettings()}));
+app.post("/api/sniper/admin/owner-access",auth,async(req,res)=>{
+ const members=readSniperMembers();
+ let owner=members.find(x=>x.owner===true);
+ if(!owner){owner={email:"site-owner",active:true,owner:true,plan:"lifetime",accessToken:crypto.randomBytes(16).toString("hex").toUpperCase(),activatedAt:new Date().toISOString()};members.unshift(owner);await writeSniperMembers(members);}
+ res.cookie("nv_sniper_access",owner.accessToken,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",maxAge:10*365*24*60*60*1000,path:"/sniper.html"});
+ res.json({ok:true,url:"/sniper.html"});
+});
 app.put("/api/sniper/admin/settings",auth,async(req,res)=>{
  const b=req.body||{};
  const next={accountHolder:String(b.accountHolder||"").trim().slice(0,100),bankName:String(b.bankName||"").trim().slice(0,100),iban:String(b.iban||"").replace(/\s+/g,"").toUpperCase().slice(0,34),bic:String(b.bic||"").replace(/\s+/g,"").toUpperCase().slice(0,11),instructions:String(b.instructions||"").trim().slice(0,500)};
