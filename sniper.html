@@ -32,6 +32,17 @@
 <div class="note">Hinweis: Die Bilder dienen aktuell der Vorschau. Der Beschreibungstext wird aus deinen Angaben erstellt; automatische KI-Bilderkennung und KI-Hintergrundbearbeitung sind noch nicht verbunden. Ein späteres KI-Fotostudio darf den echten Zustand nicht verfälschen.</div></section>
 
 <section class="stats"><div class="stat"><b id="filterCount">0</b><span>Gespeicherte Filter</span></div><div class="stat"><b>—</b><span>Live-Treffer</span></div><div class="stat"><b>—</b><span>Letzter Scan</span></div></section>
+<section class="panel" id="offer-manager">
+<div class="feedhead"><div><h2>Artikel auf deiner Seite</h2><p class="desc" style="margin:5px 0 0">Echte Vinted-Angebote als Karten sammeln und direkt öffnen.</p></div><span class="status">● LINK-IMPORT</span></div>
+<form id="offerForm">
+<div class="field"><label for="offerUrl">Vinted-Angebotslink</label><input id="offerUrl" type="url" placeholder="https://www.vinted.de/items/..." required></div>
+<div class="two"><div class="field"><label for="offerTitle">Titel</label><input id="offerTitle" maxlength="100" placeholder="z. B. Nike Tech Fleece" required></div><div class="field"><label for="offerPrice">Preis in €</label><input id="offerPrice" type="number" min="0" step=".01" placeholder="z. B. 25"></div></div>
+<div class="field"><label for="offerImage">Bild-URL (optional)</label><input id="offerImage" type="url" placeholder="https://..."></div>
+<button class="btn" type="submit">ARTIKEL HINZUFÜGEN</button><span class="mini" id="offerFeedback" aria-live="polite" style="margin-left:10px">Die Einträge werden in diesem Browser gespeichert.</span>
+</form>
+<div id="offerCards" class="feedgrid" style="margin-top:16px"><div class="empty" style="grid-column:1/-1">Noch keine Artikel hinzugefügt.</div></div>
+<div class="note">Die Karten öffnen das jeweilige Originalangebot auf Vinted. Vinted-Suchergebnisse werden ohne offizielle Datenanbindung nicht automatisch importiert.</div>
+</section>
 <section class="panel" id="feed"><div class="feedhead"><div><h2>Live Feed</h2><p class="desc" style="margin:5px 0 0">Neue Angebote passend zu deinen aktiven Filtern.</p></div><div class="right"><span class="status">● WARTET AUF VERBINDUNG</span></div></div>
 <div class="empty"><div class="symbol">⌁</div><b>Noch keine Live-Angebote</b><p>Sobald eine erlaubte Angebotsquelle verbunden ist, erscheinen passende Artikel hier mit Preis, Verkäuferland, Filter-Match und direktem Link zum Angebot.</p><button class="btn secondary" id="importSearch" type="button">VINTED-SUCHE IMPORTIEREN</button></div>
 <div class="note">Es werden keine erfundenen Angebote angezeigt. Derzeit gibt es keine automatische Vinted-Abfrage, keinen Passwort- oder Session-Cookie-Import und keinen automatischen Kauf.</div>
@@ -49,7 +60,11 @@
 </section>
 </main></div><footer class="footer">N Vintage Sniper · Unabhängiges Projekt, nicht mit Vinted verbunden oder von Vinted unterstützt.</footer></div>
 <script>
-const $=id=>document.getElementById(id),KEY="nv-sniper-filters-v1";let countries=["DE"];
+const $=id=>document.getElementById(id),KEY="nv-sniper-filters-v1",OFFER_KEY="nv-sniper-offers-v1";let countries=["DE"];
+const readOffers=()=>{try{const v=JSON.parse(localStorage.getItem(OFFER_KEY)||"[]");return Array.isArray(v)?v:[]}catch{return[]}};
+function renderOffers(){const xs=readOffers();$("offerCards").innerHTML=xs.length?xs.map(x=>'<article class="feedcard">'+(x.image?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer"><img src="'+esc(x.image)+'" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:7px;margin-bottom:10px"></a>':'')+'<strong>'+esc(x.title)+'</strong><p>'+(x.price!==""&&x.price!=null?esc(Number(x.price).toLocaleString("de-DE",{style:"currency",currency:"EUR"})):"Preis nicht angegeben")+'</p><a class="btn secondary" style="display:inline-block;text-decoration:none" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">AUF VINTED ÖFFNEN ↗</a><button class="btn ghost" type="button" data-delete-offer="'+esc(x.id)+'" style="margin-left:6px">ENTFERNEN</button></article>').join(""):'<div class="empty" style="grid-column:1/-1">Noch keine Artikel hinzugefügt.</div>'}
+$("offerForm").addEventListener("submit",e=>{e.preventDefault();let u;try{u=new URL($("offerUrl").value.trim())}catch{$("offerFeedback").textContent="Bitte einen gültigen Link eingeben.";return}if(!/(^|\\.)vinted\\.(de|com|fr|nl|it|es|be|pl|at|co\\.uk)$/.test(u.hostname)){$("offerFeedback").textContent="Bitte einen direkten Link von Vinted verwenden.";return}const xs=readOffers();xs.unshift({id:crypto.randomUUID(),url:u.href,title:$("offerTitle").value.trim(),price:$("offerPrice").value,image:$("offerImage").value.trim()});localStorage.setItem(OFFER_KEY,JSON.stringify(xs));e.target.reset();$("offerFeedback").textContent="Artikelkarte hinzugefügt.";renderOffers()});
+$("offerCards").addEventListener("click",e=>{const b=e.target.closest("[data-delete-offer]");if(!b)return;localStorage.setItem(OFFER_KEY,JSON.stringify(readOffers().filter(x=>x.id!==b.dataset.deleteOffer)));renderOffers()});
 const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(v)?v:[]}catch{return[]}},write=v=>localStorage.setItem(KEY,JSON.stringify(v));
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function vintedSearchUrl(x){const u=new URL("https://www.vinted.de/catalog");u.searchParams.set("search_text",x.keywords||"");if(Number(x.min)>0)u.searchParams.set("price_from",String(x.min));if(Number(x.max)>0)u.searchParams.set("price_to",String(x.max));if(x.size)u.searchParams.set("size_ids[]",x.size);return u.toString()}
@@ -63,5 +78,5 @@ let itemPhotoUrls=[];
 $("itemPhotos").addEventListener("change",e=>{itemPhotoUrls.forEach(URL.revokeObjectURL);itemPhotoUrls=Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")).slice(0,8).map(f=>URL.createObjectURL(f));$("photoPreview").innerHTML="";itemPhotoUrls.forEach(src=>{const img=document.createElement("img");img.src=src;img.alt="Artikelvorschau";img.style.cssText="width:105px;height:125px;object-fit:cover;border-radius:8px;border:1px solid var(--line)";$("photoPreview").appendChild(img)})});
 $("makeDescription").addEventListener("click",()=>{const brand=$("itemBrand").value.trim(),type=$("itemType").value.trim(),size=$("itemSize").value.trim(),color=$("itemColor").value.trim(),condition=$("itemCondition").value,defects=$("itemDefects").value.trim(),extra=$("itemExtra").value.trim();if(!brand&&!type){$("listingOutput").value="Bitte Marke oder Kleidungsstück eintragen.";return}const title=[brand,type,color].filter(Boolean).join(" ");const details=[brand?"Marke: "+brand:"",size?"Größe: "+size:"",color?"Farbe: "+color:"","Zustand: "+condition].filter(Boolean).join("\n");const body="Ich verkaufe "+[brand,type].filter(Boolean).join(" ")+"."+(color?" Farbe: "+color+".":"")+(size?" Größe: "+size+".":"")+" Der Artikel ist in folgendem Zustand: "+condition+"."+(defects?" Hinweis: "+defects+".":"")+(extra?" "+extra:"")+"\n\nBei Fragen gerne melden!";$("listingOutput").value=title+"\n\n"+details+"\n\n"+body});
 $("copyDescription").addEventListener("click",async()=>{const value=$("listingOutput").value;if(!value)return;try{await navigator.clipboard.writeText(value);$("copyDescription").textContent="KOPIERT ✓"}catch{$("listingOutput").select();document.execCommand("copy")}});
-render();
+render();renderOffers();
 </script></body></html>
