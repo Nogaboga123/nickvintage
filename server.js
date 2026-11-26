@@ -336,7 +336,7 @@ app.put("/sniper.html/api/workspace-cloud",async(req,res)=>{
 const aiMember=(req)=>{const token=req.cookies?.nv_sniper_access;return token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));};
 app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
- if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"KI noch nicht aktiviert: In Render fehlt OPENAI_API_KEY."});
+ if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die kostenlose Text-KI funktioniert bereits. Automatische Foto-Erkennung benötigt einen externen KI-Dienst; bitte Produktangaben manuell ergänzen."});
  if(!req.file)return res.status(400).json({error:"Bitte zuerst ein Produktfoto auswählen."});
  const prompt="Analysiere dieses Secondhand-Kleidungsstück für ein Vinted-Inserat. Antworte ausschließlich als gültiges JSON mit den Feldern brand,type,size,color,material,condition,details,priceLow,priceHigh,priceNote. Werte als Strings, priceLow und priceHigh als Zahlen in Euro oder null. Erkenne nur Merkmale, die im Foto wirklich sichtbar oder lesbar sind. Wenn Marke/Größe/Material nicht eindeutig erkennbar sind, gib leeren String zurück. Lies Logos/Etiketten nur wenn lesbar. Zustand niemals als neu behaupten; wenn Gebrauchsspuren nicht sicher beurteilbar sind, condition leer lassen. Schätze eine vorsichtige Gebrauchtpreis-Spanne nur wenn Artikeltyp und Marke hinreichend bestimmbar sind, sonst null. Preis ist eine grobe KI-Schätzung ohne Live-Marktdaten oder Vergleichsangebote. details kurz halten.";
  try{
