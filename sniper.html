@@ -35,6 +35,18 @@ textarea{min-height:100px}
 @media(max-width:560px){.shell{padding:14px 12px 44px}.top{margin-bottom:24px}.hero{margin-bottom:24px}.hero h1{font-size:clamp(38px,11vw,54px);letter-spacing:-2.4px}.steps{gap:7px;margin:20px 0 24px}.step{font-size:11px;padding:8px 10px}.panel{border-radius:15px;padding:15px}.upload{min-height:180px}.actions .btn{flex:1}.background-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head><body><main class="shell">
 <header class="top"><div class="logo">N<span>.</span> VINTAGE <span style="color:#92939e;font-size:10px;letter-spacing:2px;margin-left:7px">STUDIO</span></div><div class="member">✦ Mitgliederbereich · Freigeschaltet</div></header>
+<section id="creditWallet" style="margin:18px 0 24px;padding:18px;border:1px solid #3a3c47;border-radius:16px;background:linear-gradient(135deg,#20212a,#17181e)">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-size:11px;letter-spacing:1.5px;color:#aeb0bd;font-weight:800">N VINTAGE AI GUTHABEN</div><div style="font-size:28px;font-weight:900;margin-top:5px"><span id="creditBalance">…</span> <span style="font-size:13px;color:#c7c8d0">Credits</span></div></div><button type="button" class="btn alt" id="refreshCredits">Guthaben aktualisieren</button></div>
+ <div style="font-size:13px;color:#b8bac5;margin:8px 0 14px">Credits werden nur bei erfolgreicher KI-Nutzung berechnet. Bei einem technischen KI-Fehler werden sie zurückerstattet.</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px" id="creditPacks">
+  <button type="button" class="btn alt credit-buy" data-pack="starter">Starter · 4,99 €<small style="display:block">250 Credits</small></button>
+  <button type="button" class="btn alt credit-buy" data-pack="plus">Plus · 9,99 €<small style="display:block">600 Credits</small></button>
+  <button type="button" class="btn alt credit-buy" data-pack="pro">Pro · 19,99 €<small style="display:block">1.400 Credits</small></button>
+  <button type="button" class="btn credit-buy" data-pack="premium">Premium · 39,99 €<small style="display:block">3.200 Credits</small></button>
+ </div>
+ <div id="creditStatus" class="status" aria-live="polite"></div>
+ <div style="font-size:11px;color:#8f919d;margin-top:8px">1 Credit: Anzeige 1 · Foto-Erkennung 2 · Preis 2 · Freistellung 15 · Model/Lifestyle/Studio 25</div>
+</section>
 <section class="hero"><div class="eyebrow">Dein Verkaufsstudio</div><h1>Aus Fotos werden<br><span style="color:var(--accent)">fertige Anzeigen.</span></h1><p>Lade deine Produktbilder hoch, lass sie optimieren und erstelle in wenigen Schritten professionelle Verkaufstexte. Für Vinted, eBay, Kleinanzeigen und mehr.</p></section>
 <div class="steps"><div class="step"><b>01</b> Fotos hochladen</div><div class="step"><b>02</b> Produkt erkennen</div><div class="step"><b>03</b> Bilder optimieren</div><div class="step"><b>04</b> Anzeige erstellen</div></div>
 <div class="layout">
@@ -86,6 +98,12 @@ async function aiText(kind){const b=kind==="price"?$("price"):$("generate");b.di
 $("generate").onclick=()=>aiText("listing");$("price").onclick=()=>aiText("price");
 document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const t=$(b.dataset.copy).textContent;if(!t)return;try{await navigator.clipboard.writeText(t);status("textStatus","Kopiert.","ok")}catch{status("textStatus","Kopieren nicht möglich – Text markieren.","error")}});
 $("copyAll").onclick=async()=>{const t="TITEL\n"+$("titleOut").textContent+"\n\nBESCHREIBUNG\n"+$("descriptionOut").textContent;try{await navigator.clipboard.writeText(t);status("textStatus","Titel und Beschreibung kopiert.","ok")}catch{status("textStatus","Kopieren nicht möglich.","error")}};
+async function refreshCredits(){const b=$("refreshCredits");if(b)b.disabled=true;try{const r=await fetch("/api/sniper/credits",{credentials:"same-origin",cache:"no-store"});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Guthaben konnte nicht geladen werden.");$("creditBalance").textContent=Number(d.credits||0).toLocaleString("de-DE");$("creditStatus").textContent="Guthaben erfolgreich aktualisiert."}catch(e){$("creditBalance").textContent="—";$("creditStatus").textContent=e.message}finally{if(b)b.disabled=false}}
+async function buyCredits(packId){const buttons=[...document.querySelectorAll(".credit-buy")];buttons.forEach(b=>b.disabled=true);$("creditStatus").textContent="Sichere Verbindung zu Stripe wird vorbereitet …";try{const r=await fetch("/api/sniper/credits/checkout",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({packId})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Checkout konnte nicht gestartet werden.");if(!d.url)throw Error("Stripe hat keinen Checkout-Link zurückgegeben.");location.href=d.url}catch(e){$("creditStatus").textContent=e.message;buttons.forEach(b=>b.disabled=false)}}
+document.querySelectorAll(".credit-buy").forEach(b=>b.addEventListener("click",()=>buyCredits(b.dataset.pack)));
+$("refreshCredits").addEventListener("click",refreshCredits);
+const creditResult=new URLSearchParams(location.search).get("credits");if(creditResult==="success")$("creditStatus").textContent="Zahlung wird bestätigt. Dein Guthaben erscheint gleich nach der Stripe-Bestätigung.";else if(creditResult==="cancelled")$("creditStatus").textContent="Zahlung abgebrochen – es wurde nichts berechnet.";
+refreshCredits();
 render();
 })();
 </script></body></html>
