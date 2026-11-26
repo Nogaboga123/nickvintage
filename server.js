@@ -356,14 +356,15 @@ app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>
  // Kostenloser lokaler Textassistent: keine externe API, kein API-Schlüssel, keine Bildanalyse.
  if(!process.env.OPENAI_API_KEY){
   const clean=v=>String(v||"").trim().replace(/\s+/g," ").slice(0,240);
-  const b=clean(brand),t=clean(type),z=clean(size),c=clean(color),m=clean(material),q=clean(condition),f=clean(flaws),d=clean(details);\n  const lower=t.toLowerCase();const isJacket=/(jacke|jacket|veste|blouson|coat|mantel)/i.test(lower);const isPants=/(hose|pants|trouser|jeans|denim|pantalon)/i.test(lower);const multi=isJacket?"Veste (FR) · Giacca (IT) · Jacket (EN) · Chaqueta (ES)":isPants?"Pantalon (FR) · Pantaloni (IT) · Trousers / Pants (EN) · Pantalón (ES)":"";
+  const b=clean(brand),t=clean(type),z=clean(size),c=clean(color),m=clean(material),q=clean(condition),f=clean(flaws),d=clean(details);
+  const lower=t.toLowerCase();const isJacket=/(jacke|jacket|veste|blouson|coat|mantel)/i.test(lower);const isPants=/(hose|pants|trouser|jeans|denim|pantalon)/i.test(lower);const multi=isJacket?"Veste (FR) · Giacca (IT) · Jacket (EN) · Chaqueta (ES)":isPants?"Pantalon (FR) · Pantaloni (IT) · Trousers / Pants (EN) · Pantalón (ES)":"";
   const item=[b,t].filter(Boolean).join(" ");
   const title=[b,t,c].filter(Boolean).join(" ").slice(0,80);
   const tags=[b,t,c,m].join(" ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x=>x.length>2);
   const unique=[...new Set(tags)].slice(0,12);
   const keywords=unique.map(x=>"#"+x).join(" ");
   const facts=[b&&"Marke: "+b,t&&"Artikel: "+t,z&&"Größe: "+z,c&&"Farbe: "+c,m&&"Material: "+m,q&&"Zustand: "+q].filter(Boolean);
-  const description=[item||"Secondhand-Artikel",facts.slice(2).join(" · "),f?"Mängel/Gebrauchsspuren: "+f:"Zustand und mögliche Gebrauchsspuren bitte anhand der Fotos prüfen.",d,keywords].filter(Boolean).join("\n\n");
+  const description=[item||"Secondhand-Artikel",multi?"🌍 Auch international auffindbar: "+multi:"🌍 Internationaler Versand über die bei Vinted für deinen Artikel verfügbaren Versandoptionen.",facts.slice(2).join(" · "),f?"‼️ Mängel / Gebrauchsspuren: "+f:"", "💪 Maximal 2 Mal getragen – also wie neu (bitte nur verwenden, wenn das zutrifft).","‼️ Bei Interesse gerne melden!","📦 Schneller Versand","🙋‍♂️ Schau gerne auf meinem Profil für weitere Streetwear-Pieces vorbei.","Maße:",isJacket?"Jacke / Veste / Jacket:":isPants?"Hose / Pantalon / Pants:":"Artikel:", "Größe: "+(z||"Bitte ergänzen"),"Länge: Bitte ergänzen","Achsel zu Achsel: Bitte ergänzen","Bundweite: Bitte ergänzen",d,keywords].filter(Boolean).join("\n\n");
   let text="";
   if(kind==="price"){
    text=b&&t?"Kostenlose Preisorientierung: Vergleiche zuerst 5–10 tatsächlich verkaufte ähnliche Artikel mit gleicher Marke, Artikelart und ähnlichem Zustand. Starte testweise etwa 10–15 % über deinem Mindestpreis und passe nach Beobachtung der Nachfrage an. Ohne Live-Marktdaten wäre eine konkrete Euro-Spanne geraten.":"Bitte Marke und Artikel ergänzen. Ohne diese Angaben wäre eine Preisangabe nicht seriös.";
@@ -376,7 +377,7 @@ app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>
   }else if(kind==="custom"){
    text=[ "Dein Wunsch: "+clean(custom),title,description].filter(Boolean).join("\n\n");
   }else{
-   text="TITEL: "+(title||"Secondhand-Artikel – Details ergänzen")+"\n\nBESCHREIBUNG: "+(description||"Bitte ergänze die Produktdetails. Angaben zu Größe, Material und Zustand nur nennen, wenn du sie geprüft hast.");
+   text="TITEL: "+([title||"Secondhand-Artikel",isJacket?"Veste Jacket":isPants?"Pants Pantalon":"Vintage Streetwear"].join(" · ").slice(0,80))+"\n\nBESCHREIBUNG: "+(description||"Bitte ergänze die Produktdetails. Angaben zu Größe, Material und Zustand nur nennen, wenn du sie geprüft hast.");
   }
   return res.set("Cache-Control","no-store").json({text,engine:"lokal-kostenlos"});
  }
