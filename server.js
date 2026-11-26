@@ -352,12 +352,38 @@ app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(re
 });
 app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
- if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"KI noch nicht aktiviert: In Render fehlt OPENAI_API_KEY."});
  const {brand="",type="",size="",color="",condition="",material="",flaws="",details="",kind="listing",custom=""}=req.body||{};
- const prompt="Du bist ein sehr guter deutscher Vinted-Verkaufsassistent. Erstelle nur Inhalte, die durch die Angaben oder das Foto gestützt sind. Erfinde niemals Marke, Größe, Material, Zustand, Maße oder Echtheit. Nenne bekannte Mängel ausdrücklich. Schreibe natürlich, klar und verkaufsstark, ohne Spam.\nAufgabe: "+({listing:"Erstelle einen suchstarken Vinted-Titel (max. 80 Zeichen) und eine überzeugende, ehrliche Beschreibung.",short:"Erstelle eine kurze, lockere Vinted-Beschreibung.",premium:"Erstelle eine hochwertige Vintage-Produktbeschreibung mit passender Tonalität.",keywords:"Gib passende Suchbegriffe und Hashtags aus, ohne irrelevante Tags.",price:"Schlage eine realistische Preis-Spanne nur dann vor, wenn Marke und Artikel eindeutig sind; begründe kurz und kennzeichne sie als Schätzung.",custom:"Erfülle den individuellen Wunsch des Nutzers: "+String(custom).slice(0,1000)}[kind]||"Erstelle einen Vinted-Titel und eine Beschreibung.")+"\nAngaben:\nMarke: "+brand+"\nArtikel: "+type+"\nGröße: "+size+"\nFarbe: "+color+"\nZustand: "+condition+"\nMaterial: "+material+"\nMängel: "+(flaws||"Nicht angegeben; nicht als mangelfrei darstellen.")+"\nWeitere Details: "+details+"\nAntworte auf Deutsch. Bei listing zuerst 'TITEL:' und danach 'BESCHREIBUNG:'.";
+ // Kostenloser lokaler Textassistent: keine externe API, kein API-Schlüssel, keine Bildanalyse.
+ if(!process.env.OPENAI_API_KEY){
+  const clean=v=>String(v||"").trim().replace(/\\s+/g," ").slice(0,240);
+  const b=clean(brand),t=clean(type),z=clean(size),c=clean(color),m=clean(material),q=clean(condition),f=clean(flaws),d=clean(details);
+  const item=[b,t].filter(Boolean).join(" ");
+  const title=[b,t,c].filter(Boolean).join(" ").slice(0,80);
+  const tags=[b,t,c,m].join(" ").toLowerCase().split(/[^\\p{L}\\p{N}]+/u).filter(x=>x.length>2);
+  const unique=[...new Set(tags)].slice(0,12);
+  const keywords=unique.map(x=>"#"+x).join(" ");
+  const facts=[b&&"Marke: "+b,t&&"Artikel: "+t,z&&"Größe: "+z,c&&"Farbe: "+c,m&&"Material: "+m,q&&"Zustand: "+q].filter(Boolean);
+  const description=[item||"Secondhand-Artikel",facts.slice(2).join(" · "),f?"Mängel/Gebrauchsspuren: "+f:"Zustand und mögliche Gebrauchsspuren bitte anhand der Fotos prüfen.",d,keywords].filter(Boolean).join("\\n\\n");
+  let text="";
+  if(kind==="price"){
+   text=b&&t?"Kostenlose Preisorientierung: Vergleiche zuerst 5–10 tatsächlich verkaufte ähnliche Artikel mit gleicher Marke, Artikelart und ähnlichem Zustand. Starte testweise etwa 10–15 % über deinem Mindestpreis und passe nach Beobachtung der Nachfrage an. Ohne Live-Marktdaten wäre eine konkrete Euro-Spanne geraten.":"Bitte Marke und Artikel ergänzen. Ohne diese Angaben wäre eine Preisangabe nicht seriös.";
+  }else if(kind==="keywords"){
+   text=keywords||"Ergänze Marke, Artikelart und Farbe, um passende Suchbegriffe zu erstellen.";
+  }else if(kind==="short"){
+   text=[title||item, q&&"Zustand: "+q, f&&"Mängel: "+f,d].filter(Boolean).join("\\n");
+  }else if(kind==="premium"){
+   text=[title||item,description].filter(Boolean).join("\\n\\n");
+  }else if(kind==="custom"){
+   text=[ "Dein Wunsch: "+clean(custom),title,description].filter(Boolean).join("\\n\\n");
+  }else{
+   text="TITEL: "+(title||"Secondhand-Artikel – Details ergänzen")+"\\n\\nBESCHREIBUNG: "+(description||"Bitte ergänze die Produktdetails. Angaben zu Größe, Material und Zustand nur nennen, wenn du sie geprüft hast.");
+  }
+  return res.set("Cache-Control","no-store").json({text,engine:"lokal-kostenlos"});
+ }
+ const prompt="Du bist ein sehr guter deutscher Vinted-Verkaufsassistent. Erstelle nur Inhalte, die durch die Angaben oder das Foto gestützt sind. Erfinde niemals Marke, Größe, Material, Zustand, Maße oder Echtheit. Nenne bekannte Mängel ausdrücklich. Schreibe natürlich, klar und verkaufsstark, ohne Spam.\\nAufgabe: "+({listing:"Erstelle einen suchstarken Vinted-Titel (max. 80 Zeichen) und eine überzeugende, ehrliche Beschreibung.",short:"Erstelle eine kurze, lockere Vinted-Beschreibung.",premium:"Erstelle eine hochwertige Vintage-Produktbeschreibung mit passender Tonalität.",keywords:"Gib passende Suchbegriffe und Hashtags aus, ohne irrelevante Tags.",price:"Schlage eine realistische Preis-Spanne nur dann vor, wenn Marke und Artikel eindeutig sind; begründe kurz und kennzeichne sie als Schätzung.",custom:"Erfülle den individuellen Wunsch des Nutzers: "+String(custom).slice(0,1000)}[kind]||"Erstelle einen Vinted-Titel und eine Beschreibung.")+"\\nAngaben:\\nMarke: "+brand+"\\nArtikel: "+type+"\\nGröße: "+size+"\\nFarbe: "+color+"\\nZustand: "+condition+"\\nMaterial: "+material+"\\nMängel: "+(flaws||"Nicht angegeben; nicht als mangelfrei darstellen.")+"\\nWeitere Details: "+details+"\\nAntworte auf Deutsch. Bei listing zuerst 'TITEL:' und danach 'BESCHREIBUNG:'.";
  try{
   const messages=[{role:"system",content:"Du bist ein präziser, ehrlicher Assistent für Secondhand-Mode und Vinted."},{role:"user",content:req.file?[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]:prompt}];
-  const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,temperature:0.7}) ,signal:AbortSignal.timeout(90000)});
+  const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,temperature:0.7}),signal:AbortSignal.timeout(90000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok){console.error("OpenAI text assistant:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Text-KI ist gerade nicht erreichbar."});}
   res.json({text:data.choices?.[0]?.message?.content||""});
