@@ -356,7 +356,7 @@ app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>
  // Kostenloser lokaler Textassistent: keine externe API, kein API-Schlüssel, keine Bildanalyse.
  if(!process.env.OPENAI_API_KEY){
   const clean=v=>String(v||"").trim().replace(/\s+/g," ").slice(0,240);
-  const b=clean(brand),t=clean(type),z=clean(size),c=clean(color),m=clean(material),q=clean(condition),f=clean(flaws),d=clean(details);
+  const b=clean(brand),t=clean(type),z=clean(size),c=clean(color),m=clean(material),q=clean(condition),f=clean(flaws),d=clean(details);\n  const lower=t.toLowerCase();const isJacket=/(jacke|jacket|veste|blouson|coat|mantel)/i.test(lower);const isPants=/(hose|pants|trouser|jeans|denim|pantalon)/i.test(lower);const multi=isJacket?"Veste (FR) · Giacca (IT) · Jacket (EN) · Chaqueta (ES)":isPants?"Pantalon (FR) · Pantaloni (IT) · Trousers / Pants (EN) · Pantalón (ES)":"";
   const item=[b,t].filter(Boolean).join(" ");
   const title=[b,t,c].filter(Boolean).join(" ").slice(0,80);
   const tags=[b,t,c,m].join(" ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x=>x.length>2);
