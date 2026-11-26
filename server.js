@@ -115,6 +115,7 @@ function setEarlyCookie(req,res,passwordHash){
  res.cookie("nv_early_access",createEarlySession(passwordHash),{httpOnly:true,secure:process.env.NODE_ENV==="production"||req.secure||req.get("x-forwarded-proto")==="https",sameSite:"lax",maxAge:EARLY_ACCESS_TTL,path:"/"});
 }
 
+const AI_CREDIT_PACKS={starter:{name:"Starter",amountCents:499,credits:250},plus:{name:"Plus",amountCents:999,credits:600},pro:{name:"Pro",amountCents:1999,credits:1400},premium:{name:"Premium",amountCents:3999,credits:3200}};
 const stripe=process.env.STRIPE_SECRET_KEY?new Stripe(process.env.STRIPE_SECRET_KEY):null;
 const stripeWebhookSecret=process.env.STRIPE_WEBHOOK_SECRET||"";
 const publicBaseUrl=process.env.PUBLIC_BASE_URL||process.env.RENDER_EXTERNAL_URL||"http://localhost:4242";
@@ -173,8 +174,18 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
   const event=stripe.webhooks.constructEvent(req.body,req.headers["stripe-signature"],stripeWebhookSecret);
   if(event.type==="checkout.session.completed"){
    const s=event.data.object, id=String(s.id);
-   const orders=readOrders();
-   if(!orders.some(o=>o.stripeSessionId===id)){
+   if(s.metadata?.kind==="nv_ai_credits" && s.payment_status==="paid"){
+    const payments=readSniperPayments();
+    if(!payments.some(p=>p.stripeSessionId===id)){
+     const accountId=String(s.metadata?.creditAccountId||""),pack=AI_CREDIT_PACKS[String(s.metadata?.packId||"")];
+     const members=readSniperMembers(),member=members.find(x=>x.creditAccountId===accountId);
+     if(!member||!pack)throw new Error("Credit checkout member or package not found");
+     member.credits=Math.max(0,Number(member.credits)||0)+pack.credits;member.creditsUpdatedAt=new Date().toISOString();await writeSniperMembers(members);
+     payments.unshift({id:crypto.randomBytes(12).toString("hex"),stripeSessionId:id,creditAccountId:accountId,email:s.customer_details?.email||s.customer_email||member.email||"",type:"credit_topup",packId:s.metadata.packId,credits:pack.credits,amountCents:pack.amountCents,status:"paid",createdAt:new Date().toISOString()});await writeSniperPayments(payments);
+    }
+   }else{
+    const orders=readOrders();
+    if(!orders.some(o=>o.stripeSessionId===id)){
     const parsed=String(s.metadata?.items||"").split(",").filter(Boolean).map(v=>{const [pid,qty]=v.split("x").map(Number);return {id:pid,qty}});
     const db=readProducts(),discountCode=String(s.metadata?.discountCode||""),cfg=readSettings(),discount=cfg.discount||{},discountPercent=discountCode&&discount.active&&discountCode===String(discount.code||"").trim().toUpperCase()?Math.max(0,Math.min(99,Number(discount.percent)||0)):0,factor=1-discountPercent/100,orderItems=parsed.map(x=>{const p=db.find(y=>Number(y.id)===x.id);return p?{id:p.id,name:p.name,size:p.size,price:Number(p.price),chargedUnitPrice:Math.round(Number(p.price)*factor*100)/100,purchasePrice:Number(p.purchasePrice||0),qty:x.qty}:null}).filter(Boolean);
     for(const x of parsed){const p=db.find(y=>Number(y.id)===x.id);if(p){p.stock=Math.max(0,(p.stock??1)-x.qty);if(p.stock===0)p.status="sold"}}
@@ -185,6 +196,7 @@ app.post("/api/stripe-webhook",express.raw({type:"application/json"}),async(req,
     orders.unshift({id:"ND-"+Date.now().toString(36).toUpperCase(),stripeSessionId:id,email:s.customer_details?.email||s.customer_email||"",customerName:shipping.name||s.customer_details?.name||"",shippingAddress:{line1:String(address.line1||""),line2:String(address.line2||""),postalCode:String(address.postal_code||""),city:String(address.city||""),state:String(address.state||""),country:String(address.country||s.metadata?.shippingCountry||"")},items:orderItems,itemsTotal,shippingTotal:Math.max(0,Math.round((total-itemsTotal)*100)/100),discountCode,discountPercent,shippingCountry:String(address.country||s.metadata?.shippingCountry||""),total,status:"Bezahlt",tracking:"",carrier:"DHL",test:s.livemode===false,confirmationEmailStatus:"pending",confirmationEmailAttempts:0,createdAt:new Date().toISOString()});
     await writeOrders(orders);
     void processPendingOrderEmails();
+    }
    }
   }
   res.json({received:true});
@@ -293,6 +305,7 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
  const requestedSize=String(req.body?.size||"1024x1024");
  const imageSize=["1024x1024","1024x1536","1536x1024"].includes(requestedSize)?requestedSize:"1024x1024";
 
+ const debit=await debitAiCredits(member,mode==="background"?15:25,"image-edit",res);if(!debit)return;
  const modelOptions=" Model: "+modelGender+". Body type: "+modelBody+". Pose: "+modelPose+". Background: "+modelScene+".";
 
  const prompt=mode==="model" ? "Create a "+imageStyle+" fashion e-commerce image showing a fictional "+modelGender+" wearing the exact garment from the reference photo. Keep the garment as faithful as possible: preserve its color, cut, fabric, logos, prints, seams and visible wear. Show a natural full or three-quarter body pose, tasteful simple studio background, realistic proportions and lighting. Do not invent labels or claim exact fit. The model is fictional and must not resemble a real person. Garment context: "+product+modelOptions : mode==="lifestyle" ? "Create a photorealistic lifestyle fashion image featuring the exact garment from the reference photo in a tasteful contemporary street-style setting. Preserve garment color, cut, fabric, logos, print and visible wear as faithfully as possible. Do not add brand marks or alter the design. Garment context: "+product+modelOptions : mode==="custom" ? "Edit the provided product photo according to this user request: "+custom+". Preserve the actual product identity, design, logos, color and visible defects as faithfully as possible. Do not invent product facts or hide wear. Product context: "+product : mode==="background"
@@ -309,12 +322,12 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
   form.append("image",new Blob([req.file.buffer],{type:req.file.mimetype}),req.file.originalname||"product-image.png");
   const response=await fetch("https://api.openai.com/v1/images/edits",{method:"POST",headers:{Authorization:"Bearer "+process.env.OPENAI_API_KEY},body:form,signal:AbortSignal.timeout(180000)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){console.error("OpenAI image edit failed:",response.status,data.error?.message||"");return res.status(response.status===429?429:502).json({error:data.error?.message||"Die Bild-KI konnte das Foto gerade nicht bearbeiten. Bitte später erneut versuchen."});}
+  if(!response.ok){await debit.refund();console.error("OpenAI image edit failed:",response.status,data.error?.message||"");return res.status(response.status===429?429:502).json({error:data.error?.message||"Die Bild-KI konnte das Foto gerade nicht bearbeiten. Bitte später erneut versuchen."});}
   const encoded=data.data?.[0]?.b64_json;
-  if(!encoded)return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});
+  if(!encoded){await debit.refund();return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});}
   res.set("Cache-Control","no-store");
   res.json({image:"data:image/png;base64,"+encoded,mode,model:"gpt-image-2.6-sunburst"});
- }catch(error){console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
+ }catch(error){await debit.refund();console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
 });
 // Vinted AI Tool: Text- und Bildassistent
 
@@ -334,21 +347,27 @@ app.put("/sniper.html/api/workspace-cloud",async(req,res)=>{
  catch(e){console.error("Seller cloud write:",e.message);res.status(500).json({error:"Cloud-Sicherung konnte nicht gespeichert werden."})}
 });
 const aiMember=(req)=>{const token=req.cookies?.nv_sniper_access;return token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));};
+const creditAccountId=member=>{if(!member.creditAccountId)member.creditAccountId=crypto.randomBytes(16).toString("hex");if(!Number.isFinite(Number(member.credits)))member.credits=0;return member.creditAccountId};
+async function debitAiCredits(member,cost,action,res){const members=readSniperMembers(),current=members.find(x=>x===member||x.sessionToken===member?.sessionToken||x.accessToken===member?.accessToken);if(!current)return null;creditAccountId(current);const balance=Math.max(0,Number(current.credits)||0);if(balance<cost){await writeSniperMembers(members);res.status(402).json({error:"Nicht genug N Vintage Credits. Bitte lade dein Guthaben auf.",code:"INSUFFICIENT_CREDITS",balance,required:cost});return null}current.credits=balance-cost;current.creditsUpdatedAt=new Date().toISOString();await writeSniperMembers(members);let refunded=false;return {refund:async()=>{if(refunded)return;refunded=true;const latest=readSniperMembers(),m=latest.find(x=>x.creditAccountId===current.creditAccountId);if(m){m.credits=(Number(m.credits)||0)+cost;m.creditsUpdatedAt=new Date().toISOString();await writeSniperMembers(latest)}}}}
+app.get("/api/sniper/credits",(req,res)=>{const member=aiMember(req);if(!member)return res.status(401).json({error:"Bitte zuerst anmelden."});const members=readSniperMembers(),current=members.find(x=>x.sessionToken===member.sessionToken||x.accessToken===member.accessToken)||member;creditAccountId(current);void writeSniperMembers(members);res.set("Cache-Control","no-store").json({credits:Math.max(0,Number(current.credits)||0),packs:Object.entries(AI_CREDIT_PACKS).map(([id,p])=>({id,name:p.name,credits:p.credits,priceCents:p.amountCents}))})});
+app.post("/api/sniper/credits/checkout",async(req,res)=>{try{const member=aiMember(req);if(!member)return res.status(401).json({error:"Bitte zuerst anmelden."});if(!stripe)return res.status(503).json({error:"Zahlungen sind momentan nicht verfügbar."});const packId=String(req.body?.packId||""),pack=AI_CREDIT_PACKS[packId];if(!pack)return res.status(400).json({error:"Ungültiges Credit-Paket."});const members=readSniperMembers(),current=members.find(x=>x.sessionToken===member.sessionToken||x.accessToken===member.accessToken);if(!current)return res.status(401).json({error:"Mitgliedskonto nicht gefunden."});const accountId=creditAccountId(current);await writeSniperMembers(members);const session=await stripe.checkout.sessions.create({mode:"payment",line_items:[{price_data:{currency:"eur",unit_amount:pack.amountCents,product_data:{name:"N Vintage AI Credits – "+pack.name,description:pack.credits+" Credits für KI-Funktionen"}} ,quantity:1}],metadata:{kind:"nv_ai_credits",creditAccountId:accountId,packId},success_url:publicBaseUrl+"/sniper.html?credits=success",cancel_url:publicBaseUrl+"/sniper.html?credits=cancelled"});res.json({url:session.url})}catch(error){console.error("N Vintage credit checkout:",error.message);res.status(500).json({error:"Checkout konnte nicht gestartet werden."})}});
+
 app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
  if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die kostenlose Text-KI funktioniert bereits. Automatische Foto-Erkennung benötigt einen externen KI-Dienst; bitte Produktangaben manuell ergänzen."});
  if(!req.file)return res.status(400).json({error:"Bitte zuerst ein Produktfoto auswählen."});
+ const debit=await debitAiCredits(aiMember(req),2,"product-analysis",res);if(!debit)return;
  const prompt="Analysiere dieses Secondhand-Kleidungsstück für ein Vinted-Inserat. Antworte ausschließlich als gültiges JSON mit den Feldern brand,type,size,color,material,condition,details,priceLow,priceHigh,priceNote. Werte als Strings, priceLow und priceHigh als Zahlen in Euro oder null. Erkenne nur Merkmale, die im Foto wirklich sichtbar oder lesbar sind. Wenn Marke/Größe/Material nicht eindeutig erkennbar sind, gib leeren String zurück. Lies Logos/Etiketten nur wenn lesbar. Zustand niemals als neu behaupten; wenn Gebrauchsspuren nicht sicher beurteilbar sind, condition leer lassen. Schätze eine vorsichtige Gebrauchtpreis-Spanne nur wenn Artikeltyp und Marke hinreichend bestimmbar sind, sonst null. Preis ist eine grobe KI-Schätzung ohne Live-Marktdaten oder Vergleichsangebote. details kurz halten.";
  try{
   const messages=[{role:"system",content:"Du bist ein vorsichtiger visueller Assistent für Secondhand-Mode. Erfinde keine Produktmerkmale."},{role:"user",content:[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]}];
   const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,response_format:{type:"json_object"},temperature:0.2}),signal:AbortSignal.timeout(90000)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){console.error("OpenAI product analysis:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Fotoanalyse ist gerade nicht erreichbar."});}
-  const raw=data.choices?.[0]?.message?.content||"{}";let result;try{result=JSON.parse(raw)}catch{return res.status(502).json({error:"Die Fotoanalyse lieferte kein lesbares Ergebnis."});}
+  if(!response.ok){await debit.refund();console.error("OpenAI product analysis:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Fotoanalyse ist gerade nicht erreichbar."});}
+  const raw=data.choices?.[0]?.message?.content||"{}";let result;try{result=JSON.parse(raw)}catch{await debit.refund();return res.status(502).json({error:"Die Fotoanalyse lieferte kein lesbares Ergebnis."});}
   const clean=v=>typeof v==="string"?v.trim().slice(0,500):"";
   const low=Number(result.priceLow),high=Number(result.priceHigh);
   res.set("Cache-Control","no-store").json({brand:clean(result.brand),type:clean(result.type),size:clean(result.size),color:clean(result.color),material:clean(result.material),condition:clean(result.condition),details:clean(result.details),priceLow:Number.isFinite(low)&&low>0?Math.round(low):null,priceHigh:Number.isFinite(high)&&high>=low?Math.round(high):null,priceNote:clean(result.priceNote)||"Grobe KI-Schätzung, keine Live-Marktdaten."});
- }catch(error){console.error("Vinted product analysis:",error.message);res.status(502).json({error:"Verbindung zur Fotoanalyse fehlgeschlagen. Bitte erneut versuchen."});}
+ }catch(error){await debit.refund();console.error("Vinted product analysis:",error.message);res.status(502).json({error:"Verbindung zur Fotoanalyse fehlgeschlagen. Bitte erneut versuchen."});}
 });
 app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
@@ -381,14 +400,15 @@ app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>
   }
   return res.set("Cache-Control","no-store").json({text,engine:"lokal-kostenlos"});
  }
+ const debit=await debitAiCredits(aiMember(req),kind==="price"?2:1,"text-"+kind,res);if(!debit)return;
  const prompt="Du bist ein sehr guter deutscher Vinted-Verkaufsassistent. Erstelle nur Inhalte, die durch die Angaben oder das Foto gestützt sind. Erfinde niemals Marke, Größe, Material, Zustand, Maße oder Echtheit. Nenne bekannte Mängel ausdrücklich. Schreibe natürlich, klar und verkaufsstark, ohne Spam.\\nAufgabe: "+({listing:"Erstelle einen suchstarken Vinted-Titel (max. 80 Zeichen) und eine überzeugende, ehrliche Beschreibung.",short:"Erstelle eine kurze, lockere Vinted-Beschreibung.",premium:"Erstelle eine hochwertige Vintage-Produktbeschreibung mit passender Tonalität.",keywords:"Gib passende Suchbegriffe und Hashtags aus, ohne irrelevante Tags.",price:"Schlage eine realistische Preis-Spanne nur dann vor, wenn Marke und Artikel eindeutig sind; begründe kurz und kennzeichne sie als Schätzung.",custom:"Erfülle den individuellen Wunsch des Nutzers: "+String(custom).slice(0,1000)}[kind]||"Erstelle einen Vinted-Titel und eine Beschreibung.")+"\\nAngaben:\\nMarke: "+brand+"\\nArtikel: "+type+"\\nGröße: "+size+"\\nFarbe: "+color+"\\nZustand: "+condition+"\\nMaterial: "+material+"\\nMängel: "+(flaws||"Nicht angegeben; nicht als mangelfrei darstellen.")+"\\nWeitere Details: "+details+"\\nAntworte auf Deutsch. Bei listing zuerst 'TITEL:' und danach 'BESCHREIBUNG:'.";
  try{
   const messages=[{role:"system",content:"Du bist ein präziser, ehrlicher Assistent für Secondhand-Mode und Vinted."},{role:"user",content:req.file?[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]:prompt}];
   const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,temperature:0.7}),signal:AbortSignal.timeout(90000)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){console.error("OpenAI text assistant:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Text-KI ist gerade nicht erreichbar."});}
+  if(!response.ok){await debit.refund();console.error("OpenAI text assistant:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Text-KI ist gerade nicht erreichbar."});}
   res.json({text:data.choices?.[0]?.message?.content||""});
- }catch(error){console.error("Vinted AI text:",error.message);res.status(502).json({error:"Verbindung zur Text-KI fehlgeschlagen. Bitte erneut versuchen."});}
+ }catch(error){await debit.refund();console.error("Vinted AI text:",error.message);res.status(502).json({error:"Verbindung zur Text-KI fehlgeschlagen. Bitte erneut versuchen."});}
 });
 // Sniper: manuelle Einmalzahlung und lebenslange Freischaltung (ohne Zahlungsanbieter).
 app.post("/api/sniper/payment-requests",async(req,res)=>{
