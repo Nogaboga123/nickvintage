@@ -317,6 +317,22 @@ app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res
  }catch(error){console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
 });
 // Vinted AI Tool: Text- und Bildassistent
+
+const sellerWorkspaceKey=req=>{const m=aiMember(req);return m? "sellerWorkspace:"+hash(String(m.paymentReference||m.email||m.id||"owner")):null};
+app.get("/sniper.html/api/workspace-cloud",async(req,res)=>{
+ const key=sellerWorkspaceKey(req);if(!key)return res.status(401).json({error:"Bitte zuerst anmelden."});
+ if(!pool)return res.status(503).json({error:"Cloud-Speicher benötigt die konfigurierte PostgreSQL-Datenbank."});
+ try{const {rows}=await pool.query("SELECT value,updated_at FROM shop_data WHERE key=$1",[key]);res.set("Cache-Control","no-store").json({workspace:rows[0]?.value||null,updatedAt:rows[0]?.updated_at||null})}
+ catch(e){console.error("Seller cloud read:",e.message);res.status(500).json({error:"Cloud-Daten konnten nicht geladen werden."})}
+});
+app.put("/sniper.html/api/workspace-cloud",async(req,res)=>{
+ const key=sellerWorkspaceKey(req);if(!key)return res.status(401).json({error:"Bitte zuerst anmelden."});
+ if(!pool)return res.status(503).json({error:"Cloud-Speicher benötigt die konfigurierte PostgreSQL-Datenbank."});
+ const workspace=req.body?.workspace;if(!workspace||typeof workspace!=="object"||Array.isArray(workspace))return res.status(400).json({error:"Ungültige Workspace-Daten."});
+ const json=JSON.stringify(workspace);if(Buffer.byteLength(json)>5*1024*1024)return res.status(413).json({error:"Workspace ist größer als 5 MB."});
+ try{const {rows}=await pool.query("INSERT INTO shop_data (key,value,updated_at) VALUES ($1,$2::jsonb,now()) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value,updated_at=now() RETURNING updated_at",[key,json]);res.set("Cache-Control","no-store").json({ok:true,updatedAt:rows[0].updated_at})}
+ catch(e){console.error("Seller cloud write:",e.message);res.status(500).json({error:"Cloud-Sicherung konnte nicht gespeichert werden."})}
+});
 const aiMember=(req)=>{const token=req.cookies?.nv_sniper_access;return token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));};
 app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
