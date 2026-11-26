@@ -73,5 +73,13 @@ const oldNewListing=$("newListing").onclick;$("newListing").onclick=()=>{oldNewL
 const oldOrderSave=$("saveOrder").onclick;$("saveOrder").onclick=()=>{const cost=Number($("oCost").value||0);const before=db.orders.length;oldOrderSave();if(db.orders.length>before){db.orders[db.orders.length-1].cost=cost;localStorage.setItem(KEY,JSON.stringify(db));render()}};
 const oldNewOrder=$("newOrder").onclick;$("newOrder").onclick=()=>{oldNewOrder();$("oCost").value=""};
 
+
+/* Weitere Arbeitsabläufe: Bestand verkaufen und passende Maßvorlagen */
+const baseRender2=render;
+render=function(){baseRender2();const query=($("stockSearch")?.value||"").toLowerCase();const rows=db.stock.map((x,i)=>({...x,_i:i})).filter(x=>[x.name,x.sku,x.place].join(" ").toLowerCase().includes(query));$("stockTable").innerHTML=table(["Artikel","SKU","Lagerort","Einkauf","Status","Aktion"],rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.sku||"—")+'</td><td>'+esc(x.place||"—")+'</td><td>'+euro(x.cost)+'</td><td><span class="tag">'+(x.sold?"Verkauft":"Verfügbar")+'</span></td><td>'+(x.sold?"":'<button class="btn secondary small" onclick="markStockSold('+x._i+')">Als verkauft</button> ')+'<button class="btn danger small" onclick="delItem(\'stock\','+x._i+')">Entfernen</button></td></tr>'))};
+window.markStockSold=i=>{const x=db.stock[i];if(!x||x.sold)return;const raw=prompt("Zu welchem Preis wurde "+x.name+" verkauft?");if(raw===null)return;const price=Number(String(raw).replace(",","."));if(!Number.isFinite(price)||price<0){toast("Bitte einen gültigen Verkaufspreis eingeben");return}db.orders.push({item:x.name,price,cost:Number(x.cost||0),date:new Date().toISOString().slice(0,10),status:"Abgeschlossen"});x.sold=true;x.soldAt=new Date().toISOString();save()};
+const stockFilter=document.createElement("div");stockFilter.className="filterbar";stockFilter.innerHTML='<input id="stockSearch" placeholder="Bestand durchsuchen (Artikel, SKU, Lagerort) …">';$("stockTable").parentNode.insertBefore(stockFilter,$("stockTable"));$("stockSearch").addEventListener("input",render);
+$("tType").addEventListener("input",()=>{const raw=$("tType").value.toLowerCase();let guide=raw.includes("jeans")||raw.includes("hose")||raw.includes("pants")?"Bundweite:\\nInnenbeinlänge:\\nAußenbeinlänge:\\nLeibhöhe:":raw.includes("jacke")||raw.includes("jacket")||raw.includes("mantel")?"Brustweite:\\nSchulterbreite:\\nÄrmellänge:\\nGesamtlänge:":raw.includes("schuh")||raw.includes("sneaker")?"Innensohlenlänge:\\nAbsatzhöhe:":"Brustweite:\\nSchulterbreite:\\nGesamtlänge:";$("tMeasurements").placeholder=guide});
+
 render();
 </script></body></html>
