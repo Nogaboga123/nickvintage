@@ -355,20 +355,24 @@ app.post("/sniper.html/api/credits/checkout",async(req,res)=>{try{const member=a
 
 app.post("/sniper.html/api/analyze-product",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
- if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die kostenlose Text-KI funktioniert bereits. Automatische Foto-Erkennung benötigt einen externen KI-Dienst; bitte Produktangaben manuell ergänzen."});
  if(!req.file)return res.status(400).json({error:"Bitte zuerst ein Produktfoto auswählen."});
+ if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return res.status(503).json({error:"Die Foto-KI ist noch nicht vollständig eingerichtet. Bitte später erneut versuchen."});
  const debit=await debitAiCredits(aiMember(req),2,"product-analysis",res);if(!debit)return;
  const prompt="Analysiere dieses Secondhand-Kleidungsstück für ein Vinted-Inserat. Antworte ausschließlich als gültiges JSON mit den Feldern brand,type,size,color,material,condition,details,priceLow,priceHigh,priceNote. Werte als Strings, priceLow und priceHigh als Zahlen in Euro oder null. Erkenne nur Merkmale, die im Foto wirklich sichtbar oder lesbar sind. Wenn Marke/Größe/Material nicht eindeutig erkennbar sind, gib leeren String zurück. Lies Logos/Etiketten nur wenn lesbar. Zustand niemals als neu behaupten; wenn Gebrauchsspuren nicht sicher beurteilbar sind, condition leer lassen. Schätze eine vorsichtige Gebrauchtpreis-Spanne nur wenn Artikeltyp und Marke hinreichend bestimmbar sind, sonst null. Preis ist eine grobe KI-Schätzung ohne Live-Marktdaten oder Vergleichsangebote. details kurz halten.";
  try{
-  const messages=[{role:"system",content:"Du bist ein vorsichtiger visueller Assistent für Secondhand-Mode. Erfinde keine Produktmerkmale."},{role:"user",content:[{type:"text",text:prompt},{type:"image_url",image_url:{url:"data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64"),detail:"high"}}]}];
-  const response=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+process.env.OPENAI_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4.1-mini",messages,response_format:{type:"json_object"},temperature:0.2}),signal:AbortSignal.timeout(90000)});
+  const imageUrl="data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64");
+  const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+"/ai/run/@cf/meta/llama-4-scout-17b-16e-instruct",{method:"POST",headers:{"Authorization":"Bearer "+process.env.CLOUDFLARE_API_TOKEN,"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"system",content:"Du bist ein vorsichtiger visueller Assistent für Secondhand-Mode. Erfinde keine Produktmerkmale. Antworte ausschließlich mit einem JSON-Objekt, ohne Markdown oder zusätzlichen Text."},{role:"user",content:[{type:"text",text:prompt},{type:"image_url",image_url:{url:imageUrl}}]}],temperature:0.2}),signal:AbortSignal.timeout(90000)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){await debit.refund();console.error("OpenAI product analysis:",response.status,data.error?.message||"");return res.status(502).json({error:data.error?.message||"Die Fotoanalyse ist gerade nicht erreichbar."});}
-  const raw=data.choices?.[0]?.message?.content||"{}";let result;try{result=JSON.parse(raw)}catch{await debit.refund();return res.status(502).json({error:"Die Fotoanalyse lieferte kein lesbares Ergebnis."});}
+  if(!response.ok||data.success===false){await debit.refund();const reason=data.errors?.[0]?.message||data.error?.message||"Cloudflare AI HTTP "+response.status;console.error("Cloudflare product analysis:",response.status,reason);return res.status(502).json({error:"Die Fotoanalyse ist gerade nicht erreichbar. Bitte später erneut versuchen."});}
+  let raw=data.result?.response??data.result?.output_text??data.response??"";
+  if(typeof raw!=="string")raw=JSON.stringify(raw);
+  raw=raw.replace(/```(?:json)?/gi,"").replace(/```/g,"").trim();
+  const first=raw.indexOf("{"),last=raw.lastIndexOf("}");
+  let result;try{if(first<0||last<first)throw new Error("JSON fehlt");result=JSON.parse(raw.slice(first,last+1))}catch{await debit.refund();console.error("Cloudflare product analysis returned invalid JSON");return res.status(502).json({error:"Die Fotoanalyse lieferte kein lesbares Ergebnis. Bitte erneut versuchen."});}
   const clean=v=>typeof v==="string"?v.trim().slice(0,500):"";
   const low=Number(result.priceLow),high=Number(result.priceHigh);
   res.set("Cache-Control","no-store").json({brand:clean(result.brand),type:clean(result.type),size:clean(result.size),color:clean(result.color),material:clean(result.material),condition:clean(result.condition),details:clean(result.details),priceLow:Number.isFinite(low)&&low>0?Math.round(low):null,priceHigh:Number.isFinite(high)&&high>=low?Math.round(high):null,priceNote:clean(result.priceNote)||"Grobe KI-Schätzung, keine Live-Marktdaten."});
- }catch(error){await debit.refund();console.error("Vinted product analysis:",error.message);res.status(502).json({error:"Verbindung zur Fotoanalyse fehlgeschlagen. Bitte erneut versuchen."});}
+ }catch(error){await debit.refund();console.error("Cloudflare Vinted product analysis:",error.message);res.status(502).json({error:"Verbindung zur Fotoanalyse fehlgeschlagen. Bitte erneut versuchen."});}
 });
 app.post("/sniper.html/api/ai-text",imageUpload.single("image"),async(req,res)=>{
  if(!aiMember(req))return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
