@@ -287,47 +287,39 @@ function auth(req,res,next){
 // Vinted AI Tool: echte, serverseitige Bildbearbeitung. Der Zugang wird über die bestehende Mitgliedschaft geprüft.
 const imageUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:12*1024*1024},fileFilter:(_req,file,cb)=>cb(null,/^image\/(jpeg|png|webp)$/.test(file.mimetype))});
 app.post("/sniper.html/api/image-edit",imageUpload.single("image"),async(req,res)=>{
- const token=req.cookies?.nv_sniper_access;
- const member=token&&readSniperMembers().find(x=>x.active&&(x.sessionToken===token||(!x.sessionToken&&x.accessToken===token)));
+ const member=aiMember(req);
  if(!member)return res.status(401).json({error:"Bitte zuerst dein Vinted AI Tool freischalten."});
- if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:"Die KI-Bildbearbeitung ist vorbereitet, aber der OpenAI-API-Schlüssel fehlt noch in Render (OPENAI_API_KEY)."});
  if(!req.file)return res.status(400).json({error:"Bitte zuerst ein JPG-, PNG- oder WEBP-Foto auswählen."});
+ if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return res.status(503).json({error:"Die Cloudflare-Bild-KI ist noch nicht vollständig eingerichtet."});
  const mode=String(req.body?.mode||"background");
  if(!["background","studio","model","lifestyle","custom"].includes(mode))return res.status(400).json({error:"Unbekannter Bearbeitungsmodus."});
- const custom=String(req.body?.custom||"").slice(0,1000);
- const product=String(req.body?.product||"").slice(0,300);
+ const custom=String(req.body?.custom||"").slice(0,1000),product=String(req.body?.product||"").slice(0,300);
  const modelGender=({woman:"adult woman",man:"adult man",nonbinary:"androgynous adult model"})[String(req.body?.modelGender||"woman")]||"adult model";
- const modelBody=String(req.body?.modelBody||"average").slice(0,40);
- const modelPose=String(req.body?.modelPose||"full-body natural standing").slice(0,80);
- const modelScene=String(req.body?.modelScene||"minimal bright studio").slice(0,80);
- const imageStyle=String(req.body?.style||"photorealistic").slice(0,80);
- const negativePrompt=String(req.body?.negativePrompt||"").slice(0,500);
- const requestedSize=String(req.body?.size||"1024x1024");
- const imageSize=["1024x1024","1024x1536","1536x1024"].includes(requestedSize)?requestedSize:"1024x1024";
-
+ const modelBody=String(req.body?.modelBody||"average").slice(0,40),modelPose=String(req.body?.modelPose||"full-body natural standing").slice(0,80),modelScene=String(req.body?.modelScene||"minimal bright studio").slice(0,80);
+ const imageStyle=String(req.body?.style||"photorealistic").slice(0,80),negativePrompt=String(req.body?.negativePrompt||"").slice(0,500);
  const debit=await debitAiCredits(member,mode==="background"?15:25,"image-edit",res);if(!debit)return;
+ const imageData="data:"+req.file.mimetype+";base64,"+req.file.buffer.toString("base64");
  const modelOptions=" Model: "+modelGender+". Body type: "+modelBody+". Pose: "+modelPose+". Background: "+modelScene+".";
-
- const prompt=mode==="model" ? "Create a "+imageStyle+" fashion e-commerce image showing a fictional "+modelGender+" wearing the exact garment from the reference photo. Keep the garment as faithful as possible: preserve its color, cut, fabric, logos, prints, seams and visible wear. Show a natural full or three-quarter body pose, tasteful simple studio background, realistic proportions and lighting. Do not invent labels or claim exact fit. The model is fictional and must not resemble a real person. Garment context: "+product+modelOptions : mode==="lifestyle" ? "Create a photorealistic lifestyle fashion image featuring the exact garment from the reference photo in a tasteful contemporary street-style setting. Preserve garment color, cut, fabric, logos, print and visible wear as faithfully as possible. Do not add brand marks or alter the design. Garment context: "+product+modelOptions : mode==="custom" ? "Edit the provided product photo according to this user request: "+custom+". Preserve the actual product identity, design, logos, color and visible defects as faithfully as possible. Do not invent product facts or hide wear. Product context: "+product : mode==="background"
-  ? "Remove only the background from this exact product photograph and return the product as a clean, accurately isolated cutout on a fully transparent background. Preserve the product exactly: same shape, proportions, color, material, texture, logos, labels, seams, shadows that belong to the product, and every visible defect or sign of wear. Do not repair, beautify, recolor, redesign, add, remove, or invent any product detail. Do not add text, props, or watermark. Product context: "+product
-  : "Edit this exact product photograph for a realistic second-hand fashion marketplace listing. Keep the product absolutely faithful to the source: preserve exact shape, proportions, color, fabric texture, logos, labels, seams, and every visible defect or sign of wear. Change only the surrounding background to a clean, light neutral studio backdrop with soft natural daylight. Do not retouch or improve the item, do not hide defects, do not add props, text, or watermark. Product context: "+product;
+ const prompt=mode==="model"?"Create a "+imageStyle+" fashion e-commerce image showing a fictional "+modelGender+" wearing the exact garment from the reference photo. Preserve its color, cut, fabric, logos, prints, seams and visible wear as faithfully as possible. Natural "+modelPose+" pose, realistic proportions and lighting. Do not invent labels or claim exact fit. The model is fictional and must not resemble a real person. Garment context: "+product+modelOptions
+ :mode==="lifestyle"?"Create a photorealistic lifestyle fashion image featuring the exact garment from the reference photo in a contemporary street-style setting. Preserve garment color, cut, fabric, logos, print and visible wear as faithfully as possible. Do not add brand marks or alter the design. Garment context: "+product+modelOptions
+ :mode==="custom"?"Edit the provided product photo according to this request: "+custom+". Preserve product identity, design, logos, color and visible defects as faithfully as possible. Do not invent product facts or hide wear. Product context: "+product
+ :"Edit this exact product photograph for a realistic second-hand fashion marketplace listing. Keep the product faithful to the source: preserve shape, proportions, color, fabric texture, logos, labels, seams and every visible defect. Change only the surrounding background to a clean, light neutral studio backdrop with soft natural daylight. Do not retouch the item, hide defects, add props, text or watermark. Product context: "+product;
  try{
-  const form=new FormData();
-  form.append("model","gpt-image-2.6-sunburst");
-  form.append("prompt",prompt+(negativePrompt?" Avoid: "+negativePrompt:""));
-  form.append("size",imageSize);
-  form.append("quality","high");
-  form.append("output_format","png");
-  if(mode==="background")form.append("background","transparent");
-  form.append("image",new Blob([req.file.buffer],{type:req.file.mimetype}),req.file.originalname||"product-image.png");
-  const response=await fetch("https://api.openai.com/v1/images/edits",{method:"POST",headers:{Authorization:"Bearer "+process.env.OPENAI_API_KEY},body:form,signal:AbortSignal.timeout(180000)});
+  const isBackground=mode==="background";
+  const endpoint="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+"/ai/run";
+  const payload=isBackground?{model:"bria/remove-background",input:{image:imageData,preserve_alpha:true}}:{model:"black-forest-labs/flux-1-kontext-pro",input:{prompt:prompt+(negativePrompt?" Avoid: "+negativePrompt:""),input_image:imageData,output_format:"png"}};
+  const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+process.env.CLOUDFLARE_API_TOKEN,"Content-Type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(180000)});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){await debit.refund();console.error("OpenAI image edit failed:",response.status,data.error?.message||"");return res.status(response.status===429?429:502).json({error:data.error?.message||"Die Bild-KI konnte das Foto gerade nicht bearbeiten. Bitte später erneut versuchen."});}
-  const encoded=data.data?.[0]?.b64_json;
-  if(!encoded){await debit.refund();return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});}
+  if(!response.ok||data.success===false){await debit.refund();console.error("Cloudflare image edit:",response.status,data.errors?.[0]?.message||"");return res.status(502).json({error:"Cloudflare konnte das Bild gerade nicht bearbeiten. Bitte später erneut versuchen."});}
+  const imageUrl=data.result?.image||data.result?.url;
+  if(typeof imageUrl!=="string"||!/^https:\/\//i.test(imageUrl)){await debit.refund();console.error("Cloudflare image edit returned no image URL");return res.status(502).json({error:"Die Bild-KI hat kein bearbeitetes Bild zurückgegeben."});}
+  const imageResponse=await fetch(imageUrl,{signal:AbortSignal.timeout(60000)});
+  if(!imageResponse.ok){await debit.refund();return res.status(502).json({error:"Das fertige Bild konnte nicht geladen werden. Bitte erneut versuchen."});}
+  const imageBuffer=Buffer.from(await imageResponse.arrayBuffer());
+  if(!imageBuffer.length||imageBuffer.length>15*1024*1024){await debit.refund();return res.status(502).json({error:"Das Ergebnisbild ist ungültig oder zu groß."});}
   res.set("Cache-Control","no-store");
-  res.json({image:"data:image/png;base64,"+encoded,mode,model:"gpt-image-2.6-sunburst"});
- }catch(error){await debit.refund();console.error("Vinted AI image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
+  res.json({image:"data:image/png;base64,"+imageBuffer.toString("base64"),mode,model:isBackground?"bria/remove-background":"black-forest-labs/flux-1-kontext-pro"});
+ }catch(error){await debit.refund();console.error("Cloudflare Vinted image edit:",error.message);res.status(502).json({error:error.name==="TimeoutError"?"Die Bildbearbeitung dauert zu lange. Bitte versuche es erneut.":"Verbindung zur Cloudflare-Bild-KI fehlgeschlagen. Bitte später erneut versuchen."});}
 });
 // Vinted AI Tool: Text- und Bildassistent
 
