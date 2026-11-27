@@ -415,9 +415,9 @@ app.post("/api/sniper/payment-requests",async(req,res)=>{
  if(!bank.iban||!bank.accountHolder)return res.status(503).json({error:"Die Zahlungsdaten sind noch nicht eingerichtet. Bitte später erneut versuchen."});
  const id=crypto.randomBytes(16).toString("hex");
  const reference="SNIPER-"+crypto.randomBytes(4).toString("hex").toUpperCase();
- const item={id,reference,email,amountCents:2500,status:"pending",createdAt:new Date().toISOString()};
+ const item={id,reference,email,amountCents:2499,status:"pending",createdAt:new Date().toISOString()};
  const list=readSniperPayments();list.unshift(item);await writeSniperPayments(list);
- res.status(201).json({request:{id,reference,email,amountCents:2500,status:item.status},bank:{accountHolder:bank.accountHolder,iban:bank.iban,instructions:bank.instructions||""}});
+ res.status(201).json({request:{id,reference,email,amountCents:2499,status:item.status},bank:{accountHolder:bank.accountHolder,iban:bank.iban,instructions:bank.instructions||""}});
 });
 app.post("/api/sniper/redeem",async(req,res)=>{
  const code=String(req.body?.code||"").replace(/\\s+/g,"").toUpperCase();
@@ -429,7 +429,7 @@ app.post("/api/sniper/redeem",async(req,res)=>{
  // Recovery: falls die Zahlung gespeichert wurde, der Mitglieder-Eintrag aber fehlt,
  // den freigeschalteten Zugang aus dem bestätigten Zahlungseintrag wiederherstellen.
  if(!member&&payment&&!payment.accessCodeUsedAt){
-  member={email:payment.email,active:true,plan:"lifetime",amountCents:payment.amountCents||2500,accessCode:code,codeUsedAt:null,sessionToken:null,activatedAt:payment.updatedAt||new Date().toISOString(),paymentReference:payment.reference};
+  member={email:payment.email,active:true,plan:"lifetime",amountCents:payment.amountCents||2499,accessCode:code,codeUsedAt:null,sessionToken:null,activatedAt:payment.updatedAt||new Date().toISOString(),paymentReference:payment.reference};
   members.unshift(member);
  }
  if(!member)return res.status(401).json({error:"Zugangscode ungültig oder bereits verwendet. Bitte prüfe den Code oder kontaktiere den Support."});
